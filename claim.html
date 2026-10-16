@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Khalseen · Pick what you had</title>
+  <meta name="description" content="Pick what you had and Khalseen splits the bill.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="icon.png">
+  <style>
+    :root {
+      --bg: #f2f2f7; --card: #ffffff; --alt: #eaeaf1; --text: #15151d; --muted: #6b6b80; --border: #dcdce5;
+      --primary: #6a48f5; --primary-soft: rgba(106, 72, 245, 0.12); --on-primary: #ffffff;
+      --green: #0f9f74; --green-soft: rgba(15, 159, 116, 0.12); --red: #e0435b; --yellow: #b97d00;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0b10; --card: #15151d; --alt: #1e1e29; --text: #f5f5f7; --muted: #8c8ca1; --border: #272734;
+        --primary: #7c5cff; --primary-soft: rgba(124, 92, 255, 0.16);
+        --green: #2ed3a0; --green-soft: rgba(46, 211, 160, 0.14); --red: #ff6b81; --yellow: #ffc857;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
+    body { font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", Tahoma, sans-serif; -webkit-tap-highlight-color: transparent; }
+    main { max-width: 560px; margin: 0 auto; padding: 16px 16px 120px; }
+    .top { display: flex; align-items: center; gap: 10px; }
+    .top .brand { font-weight: 900; font-size: 20px; flex: 1; }
+    .lang { border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; }
+    .hero { text-align: center; margin: 24px 0 16px; }
+    .hero .emoji { font-size: 44px; }
+    .hero h1 { margin: 4px 0; font-size: 26px; line-height: 1.2; }
+    .muted { color: var(--muted); }
+    .small { font-size: 13px; color: var(--muted); }
+    .card { background: var(--card); border-radius: 20px; padding: 16px; margin: 12px 0; }
+    .card h2 { margin: 0 0 8px; font-size: 17px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 8px 14px; background: var(--alt); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+    .chip.on { background: var(--primary); color: var(--on-primary); }
+    .chip .tick { font-size: 12px; opacity: 0.8; }
+    input[type=text] { width: 100%; margin-top: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--alt); color: var(--text); font: inherit; }
+    .item { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); }
+    .item:first-of-type { border-top: 0; }
+    .item .info { flex: 1; min-width: 0; }
+    .item .name { font-weight: 700; overflow-wrap: anywhere; }
+    .qty { color: var(--primary); }
+    .stepper { display: flex; align-items: center; gap: 4px; }
+    .stepper button, .check { width: 40px; height: 40px; border-radius: 20px; border: 0; background: var(--primary-soft); color: var(--primary); font-size: 22px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .stepper button:disabled { background: var(--alt); color: var(--muted); cursor: default; }
+    .stepper .n { min-width: 28px; text-align: center; font-weight: 800; font-size: 17px; }
+    .check { border: 2px solid var(--border); background: transparent; color: transparent; font-size: 18px; }
+    .check.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+    .total { background: var(--primary-soft); }
+    .total b { font-size: 17px; }
+    .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 30%); }
+    .bar .inner { max-width: 560px; margin: 0 auto; }
+    .btn { width: 100%; border: 0; border-radius: 18px; padding: 16px; font: inherit; font-weight: 800; font-size: 17px; background: var(--primary); color: var(--on-primary); cursor: pointer; }
+    .btn:disabled { opacity: 0.6; }
+    .btn.ghost { background: transparent; color: var(--primary); font-weight: 700; font-size: 15px; padding: 10px; }
+    .ok { color: var(--green); font-weight: 700; text-align: center; }
+    .err { color: var(--red); font-weight: 700; text-align: center; }
+    .pay { font-size: 22px; font-weight: 800; color: var(--red); text-align: center; margin: 6px 0; }
+    .even { font-size: 22px; font-weight: 800; color: var(--green); text-align: center; }
+    .center { text-align: center; }
+    footer { text-align: center; margin-top: 28px; }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+<main id="app"><p class="center muted" style="margin-top:80px">…</p></main>
+<div class="bar" id="bar" hidden><div class="inner" id="barInner"></div></div>
+
+<script>
+// Khalseen: a friend's "pick what you had" link. Works in any browser, no app or account needed.
+// It reads and writes ONLY through two functions that need the link's secret token.
+const SUPABASE_URL = 'https://pzritawmzwpkufizkjlg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3amcx0iubPsUS-xce247TA_drHa_ec_'; // the public key (the same one inside the app)
+const TOKEN = location.hash.slice(1);
+
+const TEXTS = {
+  en: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} is splitting this bill. Pick what you had and send it.',
+    who: 'Who are you?', notOnList: "I'm not on the list", yourName: 'Your name', what: 'What did you have?',
+    left: '{n} left', takenBy: 'taken: {names}', yourItems: 'Your items: {amount}', extras: 'Service, tax and delivery are added by {name}.',
+    send: 'Send my picks', sent: 'Sent! {name} sees your picks now. You can still change them.', chooseFirst: 'Tap your name first',
+    expired: "This link doesn't work any more", expiredHint: 'Ask your friend to send a new one.', yourShare: 'Your share: {amount}',
+    payTo: 'Pay {name} {amount}', nothing: 'Nothing to pay. Khalseen 🤝', seeShare: 'Tap your name to see what you owe',
+    saved: '{name} saved the bill', openApp: 'Have Khalseen? Open in the app', tagline: 'Split it. Pay it. Khalseen.', privacy: 'Privacy',
+  },
+  ar: {
+    brand: 'خالصين', switchTo: 'English', intro: '{name} بيقسّم الفاتورة دي. اختار اللي أخدته وابعته.',
+    who: 'انت مين؟', notOnList: 'اسمي مش موجود', yourName: 'اسمك', what: 'أخدت إيه؟',
+    left: 'فاضل {n}', takenBy: 'خدها: {names}', yourItems: 'أصنافك: {amount}', extras: '{name} هيضيف الخدمة والضريبة والتوصيل.',
+    send: 'ابعت اختياراتي', sent: 'اتبعت! {name} شايف اختياراتك دلوقتي. تقدر تغيّرها لسه.', chooseFirst: 'اختار اسمك الأول',
+    expired: 'اللينك ده مبقاش شغال', expiredHint: 'خلّي صاحبك يبعتلك لينك جديد.', yourShare: 'نصيبك: {amount}',
+    payTo: 'ادفع لـ{name} {amount}', nothing: 'مفيش عليك حاجة. خالصين 🤝', seeShare: 'اختار اسمك عشان تشوف عليك كام',
+    saved: '{name} حفظ الفاتورة', openApp: 'عندك خالصين؟ افتحه في التطبيق', tagline: 'قسّمها، ادفعها، وخالصين.', privacy: 'الخصوصية',
+  },
+  fr: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} partage cette addition. Choisis ce que tu as pris et envoie.',
+    who: 'Qui es-tu ?', notOnList: 'Je ne suis pas dans la liste', yourName: 'Ton prénom', what: "Qu'as-tu pris ?",
+    left: 'reste {n}', takenBy: 'pris : {names}', yourItems: 'Tes articles : {amount}', extras: '{name} ajoute le service, les taxes et la livraison.',
+    send: 'Envoyer mes choix', sent: 'Envoyé ! {name} voit tes choix. Tu peux encore les changer.', chooseFirst: "Touche d'abord ton prénom",
+    expired: 'Ce lien ne fonctionne plus', expiredHint: "Demande à ton ami d'en envoyer un nouveau.", yourShare: 'Ta part : {amount}',
+    payTo: 'Paie {amount} à {name}', nothing: 'Rien à payer. Khalseen 🤝 (quittes)', seeShare: 'Touche ton prénom pour voir ce que tu dois',
+    saved: "{name} a enregistré l'addition", openApp: "Tu as Khalseen ? Ouvre dans l'app", tagline: 'Partage. Paie. Khalseen.', privacy: 'Confidentialité',
+  },
+  de: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} teilt diese Rechnung. Wähle, was du hattest, und schick es ab.',
+    who: 'Wer bist du?', notOnList: 'Ich stehe nicht auf der Liste', yourName: 'Dein Name', what: 'Was hattest du?',
+    left: 'noch {n}', takenBy: 'genommen: {names}', yourItems: 'Deine Artikel: {amount}', extras: '{name} rechnet Service, Steuer und Lieferung dazu.',
+    send: 'Meine Auswahl senden', sent: 'Gesendet! {name} sieht deine Auswahl. Du kannst sie noch ändern.', chooseFirst: 'Tippe zuerst auf deinen Namen',
+    expired: 'Dieser Link funktioniert nicht mehr', expiredHint: 'Bitte deinen Freund um einen neuen.', yourShare: 'Dein Anteil: {amount}',
+    payTo: 'Zahle {name} {amount}', nothing: 'Nichts zu zahlen. Khalseen 🤝 (quitt)', seeShare: 'Tippe auf deinen Namen, um zu sehen, was du schuldest',
+    saved: '{name} hat die Rechnung gespeichert', openApp: 'Du hast Khalseen? In der App öffnen', tagline: 'Teilen. Zahlen. Khalseen.', privacy: 'Datenschutz',
+  },
+};
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+
+let lang = store.get('lang') || (navigator.language || 'en').slice(0, 2);
+if (!TEXTS[lang]) lang = 'en';
+const tr = (key, vars = {}) => Object.entries(vars).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), TEXTS[lang][key]);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n, cur) => `${Number(n).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })} ${lang === 'ar' && cur === 'EGP' ? 'ج.م' : cur}`;
+
+async function rpc(name, args) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((data && data.message) || 'Something went wrong');
+  return data;
+}
+
+let s = null;               // the bill
+let who = store.get('who:' + TOKEN); // my key in this bill
+let newName = '';
+let mine = null;            // my picks before sending: { itemId: units }
+let note = '';              // a message under the button
+let busy = false;
+
+const app = document.getElementById('app');
+const bar = document.getElementById('bar');
+const barInner = document.getElementById('barInner');
+
+async function load() {
+  if (!TOKEN) return showExpired();
+  try {
+    s = await rpc('claim_session', { p_token: TOKEN });
+    if (who && !s.people.some((p) => p.key === who)) who = null;
+    render();
+  } catch (e) {
+    showExpired();
+  }
+}
+
+function showExpired() {
+  bar.hidden = true;
+  app.innerHTML = `${top()}<div class="hero"><div class="emoji">🔗</div><h1>${esc(tr('expired'))}</h1><p class="muted">${esc(tr('expiredHint'))}</p></div>${footer()}`;
+  bindTop();
+}
+
+function top() {
+  return `<div class="top">
+    <svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset="1" stop-color="#5530E0"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g)"/><rect x="23.4" y="32.4" width="53.2" height="12.4" rx="6.2" fill="#fff"/><rect x="23.4" y="55.2" width="53.2" height="12.4" rx="6.2" fill="#2ED3A0"/></svg>
+    <div class="brand">${esc(tr('brand'))}</div>
+    <button class="lang" id="lang">${esc(tr('switchTo'))}</button>
+  </div>`;
+}
+
+function footer() {
+  return `<footer class="small">${esc(tr('tagline'))} · <a href="privacy.html">${esc(tr('privacy'))}</a></footer>`;
+}
+
+function bindTop() {
+  document.getElementById('lang').onclick = () => {
+    lang = lang === 'ar' ? 'en' : 'ar';
+    store.set('lang', lang);
+    applyDir();
+    s ? render() : showExpired();
+  };
+}
+
+function applyDir() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+}
+
+const myPicks = () => mine || Object.fromEntries(s.picks.filter((p) => p.person_key === who).map((p) => [p.item_id, Number(p.units)]));
+const nameOf = (key) => (s.people.find((p) => p.key === key) || {}).name || '?';
+
+function render() {
+  applyDir();
+  const people = s.people;
+  const picks = myPicks();
+  let html = top();
+  html += `<div class="hero"><div class="emoji">${s.status === 'closed' ? '🧾' : '🍽️'}</div><h1>${esc(s.title)}</h1>
+    <div class="muted">${esc(s.status === 'closed' ? tr('saved', { name: s.creator }) : tr('intro', { name: s.creator }))}</div></div>`;
+
+  // Who am I
+  html += `<div class="card"><h2>${esc(tr('who'))}</h2><div class="chips">`;
+  for (const p of people) {
+    html += `<button class="chip ${p.key === who ? 'on' : ''}" data-who="${esc(p.key)}">${esc(p.name)}${p.submitted ? ' <span class="tick">✓</span>' : ''}</button>`;
+  }
+  if (s.status === 'open') html += `<button class="chip ${who === '' ? 'on' : ''}" data-who="">＋ ${esc(tr('notOnList'))}</button>`;
+  html += `</div>`;
+  if (who === '') html += `<input type="text" id="name" maxlength="40" placeholder="${esc(tr('yourName'))}" value="${esc(newName)}">`;
+  html += `</div>`;
+
+  if (s.status === 'closed') {
+    // The bill is saved: what I owe
+    const r = (s.result || []).find((x) => x.key === who);
+    if (!who || !r) {
+      html += `<p class="center muted">${esc(tr('seeShare'))}</p>`;
+    } else {
+      html += `<div class="card center"><div class="muted">${esc(tr('yourShare', { amount: money(r.share, s.currency) }))}</div>`;
+      html += r.pays.length ? r.pays.map((p) => `<div class="pay">${esc(tr('payTo', { name: p.to, amount: money(p.amount, s.currency) }))}</div>`).join('') : `<div class="even">${esc(tr('nothing'))}</div>`;
+      html += `</div>`;
+    }
+    bar.hidden = true;
+  } else {
+    // Items
+    html += `<div class="card"><h2>${esc(tr('what'))}</h2>`;
+    let total = 0;
+    s.items.forEach((it) => {
+      const n = picks[it.id] || 0;
+      const others = s.picks.filter((p) => p.item_id === it.id && p.person_key !== who);
+      const takenUnits = others.reduce((a, p) => a + Number(p.units), 0);
+      const left = it.qty - takenUnits;
+      const takers = others.map((p) => (it.qty > 1 ? `${nameOf(p.person_key)} ×${Number(p.units)}` : nameOf(p.person_key))).join(', ');
+      if (n) total += it.qty > 1 ? (it.price / it.qty) * n : it.price / (others.length + 1);
+      const sub = it.qty > 1 ? `${money(it.price / it.qty, s.currency)} · ${tr('left', { n: Math.max(0, left - n) })}` : money(it.price, s.currency);
+      html += `<div class="item"><div class="info"><div class="name">${it.qty > 1 ? `<span class="qty">${it.qty}× </span>` : ''}${esc(it.name)}</div>
+        <div class="small">${esc(sub)}${takers ? ' · ' + esc(tr('takenBy', { names: takers })) : ''}</div></div>`;
+      if (it.qty > 1) {
+        html += `<div class="stepper"><button data-item="${esc(it.id)}" data-d="-1" ${n <= 0 ? 'disabled' : ''} aria-label="−">−</button><span class="n">${n}</span><button data-item="${esc(it.id)}" data-d="1" ${n >= left ? 'disabled' : ''} aria-label="+">+</button></div>`;
+      } else {
+        html += `<button class="check ${n ? 'on' : ''}" data-item="${esc(it.id)}" data-toggle="1" role="checkbox" aria-checked="${n ? 'true' : 'false'}" aria-label="${esc(it.name)}">✓</button>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div>`;
+    html += `<div class="card total"><b>${esc(tr('yourItems', { amount: money(total, s.currency) }))}</b><div class="small">${esc(tr('extras', { name: s.creator }))}</div></div>`;
+    if (note) html += `<p class="${note.startsWith('!') ? 'err' : 'ok'}">${esc(note.replace(/^!/, ''))}</p>`;
+    html += `<p class="center"><a class="btn ghost" style="display:inline-block;width:auto;text-decoration:none" href="qesma://claim/${encodeURIComponent(TOKEN)}">${esc(tr('openApp'))}</a></p>`;
+    bar.hidden = false;
+    barInner.innerHTML = `<button class="btn" id="send" ${busy ? 'disabled' : ''}>${esc(tr('send'))}</button>`;
+    document.getElementById('send').onclick = send;
+  }
+  html += footer();
+  app.innerHTML = html;
+  bindTop();
+
+  app.querySelectorAll('[data-who]').forEach((b) => (b.onclick = () => {
+    who = b.dataset.who;
+    if (who) store.set('who:' + TOKEN, who);
+    mine = null;
+    note = '';
+    render();
+  }));
+  const nameInput = document.getElementById('name');
+  if (nameInput) nameInput.oninput = (e) => (newName = e.target.value);
+  app.querySelectorAll('[data-item]').forEach((b) => (b.onclick = () => {
+    const p = { ...myPicks() };
+    const id = b.dataset.item;
+    p[id] = b.dataset.toggle ? (p[id] ? 0 : 1) : Math.max(0, (p[id] || 0) + Number(b.dataset.d));
+    mine = p;
+    note = '';
+    render();
+  }));
+}
+
+async function send() {
+  if (who === null || (who === '' && !newName.trim())) {
+    note = '!' + tr(who === '' ? 'yourName' : 'chooseFirst');
+    return render();
+  }
+  busy = true;
+  render();
+  try {
+    const picks = Object.entries(myPicks()).filter(([, n]) => n > 0).map(([item_id, units]) => ({ item_id, units }));
+    const key = await rpc('submit_claim', { p_token: TOKEN, p_person: who || null, p_name: who ? null : newName.trim(), p_picks: picks });
+    who = key;
+    store.set('who:' + TOKEN, key);
+    mine = null;
+    note = tr('sent', { name: s.creator });
+    s = await rpc('claim_session', { p_token: TOKEN });
+  } catch (e) {
+    note = '!' + e.message;
+  }
+  busy = false;
+  render();
+}
+
+// Picks from others show up while the page is open
+setInterval(async () => {
+  if (!s || s.status !== 'open' || busy || mine) return;
+  try { s = await rpc('claim_session', { p_token: TOKEN }); render(); } catch {}
+}, 8000);
+
+applyDir();
+load();
+</script>
+</body>
+</html>

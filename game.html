@@ -218,7 +218,10 @@ function bind() {
   const phoneInput = document.getElementById('phone');
   if (phoneInput) {
     phoneInput.oninput = (e) => (phone = e.target.value);
-    phoneInput.onkeydown = (e) => e.key === 'Enter' && join();
+    // Only react to Enter (returning false here would block every other key, digits included)
+    phoneInput.onkeydown = (e) => {
+      if (e.key === 'Enter') join();
+    };
     document.getElementById('open').onclick = join;
   }
   const change = document.getElementById('change');

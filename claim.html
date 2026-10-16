@@ -215,7 +215,10 @@ function render() {
     bindHeader();
     const input = document.getElementById('phone');
     input.oninput = (e) => (phone = e.target.value);
-    input.onkeydown = (e) => e.key === 'Enter' && openBill();
+    // Only react to Enter (returning false here would block every other key, digits included)
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') openBill();
+    };
     document.getElementById('open').onclick = openBill;
     return;
   }

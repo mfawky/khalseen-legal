@@ -81,7 +81,7 @@ const TEXTS = {
   en: {
     brand: 'Khalseen', switchTo: 'العربية', intro: '{name} is splitting this bill. Pick what you had and send it.',
     phoneTitle: 'Enter your phone number', phoneHint: 'This bill opens only for the people on it.', open: 'Open the bill',
-    notOnBill: "This number isn't on this bill. Check it, or ask {name} to add you.", hi: 'Hi {name} 👋', notYou: 'Not you?',
+    notOnBill: "{number} isn't on this bill. Try another number, or ask {name} to add you.", hi: 'Hi {name} 👋', notYou: 'Not you?',
     what: 'What did you have?', left: '{n} left', takenBy: 'taken: {names}', yourItems: 'Your items: {amount}',
     extras: 'Service, tax and delivery are added by {name}.', send: 'Send my picks', sent: 'Sent! {name} sees your picks now. You can still change them.',
     expired: "This link doesn't work any more", expiredHint: 'Ask your friend to send a new one.', yourShare: 'Your share: {amount}',
@@ -91,7 +91,7 @@ const TEXTS = {
   ar: {
     brand: 'خالصين', switchTo: 'English', intro: '{name} بيقسّم الفاتورة دي. اختار اللي أخدته وابعته.',
     phoneTitle: 'اكتب رقم موبايلك', phoneHint: 'الفاتورة دي بتفتح بس للي فيها.', open: 'افتح الفاتورة',
-    notOnBill: 'الرقم ده مش في الفاتورة. اتأكد منه، أو اطلب من {name} يضيفك.', hi: 'أهلاً {name} 👋', notYou: 'مش انت؟',
+    notOnBill: 'الرقم {number} مش في الفاتورة. جرّب رقم تاني، أو اطلب من {name} يضيفك.', hi: 'أهلاً {name} 👋', notYou: 'مش انت؟',
     what: 'أخدت إيه؟', left: 'فاضل {n}', takenBy: 'خدها: {names}', yourItems: 'أصنافك: {amount}',
     extras: '{name} هيضيف الخدمة والضريبة والتوصيل.', send: 'ابعت اختياراتي', sent: 'اتبعت! {name} شايف اختياراتك دلوقتي. تقدر تغيّرها لسه.',
     expired: 'اللينك ده مبقاش شغال', expiredHint: 'خلّي صاحبك يبعتلك لينك جديد.', yourShare: 'نصيبك: {amount}',
@@ -101,7 +101,7 @@ const TEXTS = {
   fr: {
     brand: 'Khalseen', switchTo: 'العربية', intro: '{name} partage cette addition. Choisis ce que tu as pris et envoie.',
     phoneTitle: 'Entre ton numéro de téléphone', phoneHint: "Cette addition s'ouvre seulement pour les personnes qui y sont.", open: "Ouvrir l'addition",
-    notOnBill: "Ce numéro n'est pas sur cette addition. Vérifie-le ou demande à {name} de t'ajouter.", hi: 'Salut {name} 👋', notYou: 'Pas toi ?',
+    notOnBill: "{number} n'est pas sur cette addition. Essaie un autre numéro ou demande à {name} de t'ajouter.", hi: 'Salut {name} 👋', notYou: 'Pas toi ?',
     what: "Qu'as-tu pris ?", left: 'reste {n}', takenBy: 'pris : {names}', yourItems: 'Tes articles : {amount}',
     extras: '{name} ajoute le service, les taxes et la livraison.', send: 'Envoyer mes choix', sent: 'Envoyé ! {name} voit tes choix. Tu peux encore les changer.',
     expired: 'Ce lien ne fonctionne plus', expiredHint: "Demande à ton ami d'en envoyer un nouveau.", yourShare: 'Ta part : {amount}',
@@ -111,7 +111,7 @@ const TEXTS = {
   de: {
     brand: 'Khalseen', switchTo: 'العربية', intro: '{name} teilt diese Rechnung. Wähle, was du hattest, und schick es ab.',
     phoneTitle: 'Gib deine Handynummer ein', phoneHint: 'Diese Rechnung öffnet sich nur für die Leute darauf.', open: 'Rechnung öffnen',
-    notOnBill: 'Diese Nummer steht nicht auf der Rechnung. Prüfe sie oder bitte {name}, dich hinzuzufügen.', hi: 'Hallo {name} 👋', notYou: 'Nicht du?',
+    notOnBill: '{number} steht nicht auf der Rechnung. Versuch eine andere Nummer oder bitte {name}, dich hinzuzufügen.', hi: 'Hallo {name} 👋', notYou: 'Nicht du?',
     what: 'Was hattest du?', left: 'noch {n}', takenBy: 'genommen: {names}', yourItems: 'Deine Artikel: {amount}',
     extras: '{name} rechnet Service, Steuer und Lieferung dazu.', send: 'Meine Auswahl senden', sent: 'Gesendet! {name} sieht deine Auswahl. Du kannst sie noch ändern.',
     expired: 'Dieser Link funktioniert nicht mehr', expiredHint: 'Bitte deinen Freund um einen neuen.', yourShare: 'Dein Anteil: {amount}',
@@ -146,6 +146,7 @@ async function rpc(name, args) {
 let s = null;                                   // the bill (only its title until the number checks out)
 let phone = store.get('phone:' + TOKEN) || '';  // my number for this link
 let mine = null;                                // my picks before sending: { itemId: units }
+let lastTried = '';                             // the last number that wasn't on the bill
 let note = '';
 let busy = false;
 
@@ -207,7 +208,7 @@ function render() {
     html += `<div class="card"><h2>${esc(tr('phoneTitle'))}</h2><div class="small">${esc(tr('phoneHint'))}</div>
       <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="01xxxxxxxxx" value="${esc(phone)}">
       <button class="btn" id="open" style="margin-top:12px" ${busy ? 'disabled' : ''}>${esc(tr('open'))}</button></div>`;
-    if (s.tried) html += `<p class="err">${esc(tr('notOnBill', { name: s.creator }))}</p>`;
+    if (lastTried) html += `<p class="err">${esc(tr('notOnBill', { number: lastTried, name: s.creator }))}</p>`;
     html += `<p class="center"><a class="btn ghost" style="display:inline-block;width:auto;text-decoration:none" href="qesma://claim/${encodeURIComponent(TOKEN)}">${esc(tr('openApp'))}</a></p>`;
     html += footer();
     app.innerHTML = html;
@@ -280,17 +281,26 @@ function render() {
 }
 
 async function openBill() {
-  if (!phone.trim()) return;
+  const tried = phone.trim();
+  if (!tried) return;
   busy = true;
   render();
   try {
-    s = await rpc('claim_session', { p_token: TOKEN, p_phone: phone.trim() });
-    if (!s.needs_phone) store.set('phone:' + TOKEN, phone.trim());
+    s = await rpc('claim_session', { p_token: TOKEN, p_phone: tried });
+    if (!s.needs_phone) {
+      store.set('phone:' + TOKEN, tried);
+      lastTried = '';
+    } else {
+      // Not on the bill: empty the box so the next number can be typed straight away
+      lastTried = tried;
+      phone = '';
+    }
   } catch {
     return showExpired();
   }
   busy = false;
   render();
+  if (s.needs_phone) document.getElementById('phone')?.focus();
 }
 
 async function send() {

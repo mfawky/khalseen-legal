@@ -67,7 +67,7 @@ const TEXTS = {
   en: {
     brand: 'Khalseen', switchTo: 'العربية', intro: '{name} started a game. Guess the total before the check arrives. The closest guess wins!',
     phoneTitle: 'Enter your phone number', phoneHint: 'This game opens only for the people in it.', open: 'Join the game',
-    notInGame: "This number isn't in this game. If you have Khalseen, play in the app; otherwise ask {name} to add you.",
+    notInGame: "{number} isn't in this game. Try another number, or ask {name} to add you.",
     hi: 'Hi {name} 👋', notYou: 'Not you?', guess: 'Your guess ({cur})', lock: 'Lock my guess',
     locked: 'Locked! You can change it until the check is revealed.', secret: 'Nobody sees your guess until the reveal.',
     guessed: '{n} of {total} guessed', enterGuess: 'Enter a number',
@@ -78,7 +78,7 @@ const TEXTS = {
   ar: {
     brand: 'خالصين', switchTo: 'English', intro: '{name} بدأ لعبة. خمّن الحساب كله قبل ما ييجي. الأقرب يكسب!',
     phoneTitle: 'اكتب رقم موبايلك', phoneHint: 'اللعبة دي بتفتح بس للي فيها.', open: 'ادخل اللعبة',
-    notInGame: 'الرقم ده مش في اللعبة. لو عندك خالصين العب من التطبيق، وإلا اطلب من {name} يضيفك.',
+    notInGame: 'الرقم {number} مش في اللعبة. جرّب رقم تاني، أو اطلب من {name} يضيفك.',
     hi: 'أهلاً {name} 👋', notYou: 'مش انت؟', guess: 'تخمينك ({cur})', lock: 'ثبّت تخميني',
     locked: 'اتثبّت! تقدر تغيّره لحد ما الحساب يتكشف.', secret: 'محدش هيشوف تخمينك لحد ما الحساب يتكشف.',
     guessed: 'خمّن {n} من {total}', enterGuess: 'اكتب رقم',
@@ -89,7 +89,7 @@ const TEXTS = {
   fr: {
     brand: 'Khalseen', switchTo: 'العربية', intro: "{name} a lancé une partie. Devine le total avant l'arrivée de l'addition. Le plus proche gagne !",
     phoneTitle: 'Entre ton numéro de téléphone', phoneHint: "Ce jeu s'ouvre seulement pour les joueurs.", open: 'Rejoindre la partie',
-    notInGame: "Ce numéro n'est pas dans la partie. Si tu as Khalseen, joue dans l'app ; sinon demande à {name} de t'ajouter.",
+    notInGame: "{number} n'est pas dans la partie. Essaie un autre numéro ou demande à {name} de t'ajouter.",
     hi: 'Salut {name} 👋', notYou: 'Pas toi ?', guess: 'Ta réponse ({cur})', lock: 'Valider ma réponse',
     locked: "Validé ! Tu peux la changer jusqu'à la révélation.", secret: 'Personne ne voit ta réponse avant la révélation.',
     guessed: '{n} sur {total} ont deviné', enterGuess: 'Entre un nombre',
@@ -100,7 +100,7 @@ const TEXTS = {
   de: {
     brand: 'Khalseen', switchTo: 'العربية', intro: '{name} hat ein Spiel gestartet. Rate die Summe, bevor die Rechnung kommt. Wer am nächsten dran ist, gewinnt!',
     phoneTitle: 'Gib deine Handynummer ein', phoneHint: 'Dieses Spiel öffnet sich nur für die Mitspieler.', open: 'Mitspielen',
-    notInGame: 'Diese Nummer ist nicht im Spiel. Mit Khalseen spielst du in der App, sonst bitte {name}, dich hinzuzufügen.',
+    notInGame: '{number} ist nicht im Spiel. Versuch eine andere Nummer oder bitte {name}, dich hinzuzufügen.',
     hi: 'Hallo {name} 👋', notYou: 'Nicht du?', guess: 'Dein Tipp ({cur})', lock: 'Tipp festlegen',
     locked: 'Festgelegt! Du kannst ihn bis zur Auflösung ändern.', secret: 'Niemand sieht deinen Tipp vor der Auflösung.',
     guessed: '{n} von {total} haben getippt', enterGuess: 'Gib eine Zahl ein',
@@ -135,6 +135,7 @@ async function rpc(name, args) {
 let g = null;
 let phone = store.get('phone:' + TOKEN) || '';
 let guessText = '';
+let lastTried = ''; // the last number that wasn't in the game
 let note = '';
 let busy = false;
 const app = document.getElementById('app');
@@ -177,7 +178,7 @@ function render() {
     html += `<div class="card"><h2>${esc(tr('phoneTitle'))}</h2><div class="small">${esc(tr('phoneHint'))}</div>
       <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="01xxxxxxxxx" value="${esc(phone)}">
       <button class="btn" id="open" ${busy ? 'disabled' : ''}>${esc(tr('open'))}</button></div>`;
-    if (g.tried) html += `<p class="err">${esc(tr('notInGame', { name: g.creator }))}</p>`;
+    if (lastTried) html += `<p class="err">${esc(tr('notInGame', { number: lastTried, name: g.creator }))}</p>`;
   } else {
     const me = g.players.find((p) => p.id === g.me);
     html += `<div class="card" style="display:flex;align-items:center;gap:10px"><b style="flex:1">${esc(tr('hi', { name: me ? me.name : '' }))}</b><button class="chip" id="change">${esc(tr('notYou'))}</button></div>`;
@@ -235,20 +236,27 @@ function bind() {
 }
 
 async function join() {
-  if (!phone.trim()) return;
+  const tried = phone.trim();
+  if (!tried) return;
   busy = true;
   render();
   try {
-    g = await rpc('game_public', { p_token: TOKEN, p_phone: phone.trim() });
+    g = await rpc('game_public', { p_token: TOKEN, p_phone: tried });
     if (!g.needs_phone) {
-      store.set('phone:' + TOKEN, phone.trim());
+      store.set('phone:' + TOKEN, tried);
+      lastTried = '';
       if (g.my_guess != null) guessText = String(Number(g.my_guess));
+    } else {
+      // Not in the game: empty the box so the next number can be typed straight away
+      lastTried = tried;
+      phone = '';
     }
   } catch {
     return expired();
   }
   busy = false;
   render();
+  if (g.needs_phone) document.getElementById('phone')?.focus();
 }
 
 async function submit() {

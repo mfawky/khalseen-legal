@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Get Khalseen</title>
+  <meta name="description" content="Khalseen: split bills with friends, pay, and you're even.">
+  <link rel="icon" href="icon.png">
+  <style>
+    :root { --bg: #f2f2f7; --card: #ffffff; --alt: #eaeaf1; --text: #15151d; --muted: #6b6b80; --border: #dcdce5; --primary: #6a48f5; --on-primary: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0b0b10; --card: #15151d; --alt: #1e1e29; --text: #f5f5f7; --muted: #8c8ca1; --border: #272734; --primary: #7c5cff; }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
+    body { font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", Tahoma, sans-serif; }
+    main { max-width: 480px; margin: 0 auto; padding: 16px 16px 48px; text-align: center; }
+    .top { display: flex; align-items: center; gap: 10px; text-align: start; }
+    .top .brand { font-weight: 900; font-size: 20px; flex: 1; }
+    .lang { border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; }
+    h1 { font-size: 30px; margin: 28px 0 6px; line-height: 1.2; }
+    .muted { color: var(--muted); }
+    .btn { display: block; width: 100%; border: 0; border-radius: 18px; padding: 16px; font: inherit; font-weight: 800; font-size: 17px; background: var(--primary); color: var(--on-primary); text-decoration: none; margin-top: 12px; }
+    .btn.secondary { background: var(--alt); color: var(--muted); }
+    footer { margin-top: 28px; font-size: 13px; color: var(--muted); }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+// Khalseen download page. Until the Play Store listing is live, Android gets the latest test build.
+const ANDROID_URL = 'https://expo.dev/artifacts/eas/T4HfkN8eWPGmh4l5qCJ7Xju48f_U3-mgTGh7l00_WIE.apk';
+
+const TEXTS = {
+  en: { brand: 'Khalseen', switchTo: 'العربية', tagline: 'Split it. Pay it. Khalseen.', sub: 'Split bills with friends, see who owes whom, pay, and you\'re even.', android: 'Download for Android', ios: 'iPhone: coming soon', privacy: 'Privacy' },
+  ar: { brand: 'خالصين', switchTo: 'English', tagline: 'قسّمها، ادفعها، وخالصين.', sub: 'قسّم الفواتير مع أصحابك، اعرف مين عليه لمين، ادفع، وخلاص خالصين.', android: 'نزّله لأندرويد', ios: 'آيفون: قريب', privacy: 'الخصوصية' },
+  fr: { brand: 'Khalseen', switchTo: 'العربية', tagline: 'Partage. Paie. Khalseen.', sub: "Partage l'addition entre amis, vois qui doit quoi, paie, et vous êtes quittes.", android: 'Télécharger pour Android', ios: 'iPhone : bientôt', privacy: 'Confidentialité' },
+  de: { brand: 'Khalseen', switchTo: 'العربية', tagline: 'Teilen. Zahlen. Khalseen.', sub: 'Teile Rechnungen mit Freunden, sieh, wer wem was schuldet, zahle, und ihr seid quitt.', android: 'Für Android herunterladen', ios: 'iPhone: bald verfügbar', privacy: 'Datenschutz' },
+};
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+let lang = store.get('lang') || (navigator.language || 'en').slice(0, 2);
+if (!TEXTS[lang]) lang = 'en';
+const tr = (key) => TEXTS[lang][key];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function render() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.getElementById('app').innerHTML = `
+    <div class="top">
+      <svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset="1" stop-color="#5530E0"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g)"/><rect x="23.4" y="32.4" width="53.2" height="12.4" rx="6.2" fill="#fff"/><rect x="23.4" y="55.2" width="53.2" height="12.4" rx="6.2" fill="#2ED3A0"/></svg>
+      <div class="brand">${esc(tr('brand'))}</div>
+      <button class="lang" id="lang">${esc(tr('switchTo'))}</button>
+    </div>
+    <img src="icon.png" alt="" width="96" height="96" style="border-radius:22px;margin-top:28px">
+    <h1>${esc(tr('tagline'))}</h1>
+    <p class="muted">${esc(tr('sub'))}</p>
+    <a class="btn" href="${esc(ANDROID_URL)}">${esc(tr('android'))}</a>
+    <span class="btn secondary">${esc(tr('ios'))}</span>
+    <footer><a href="privacy.html">${esc(tr('privacy'))}</a></footer>`;
+  document.getElementById('lang').onclick = () => {
+    lang = lang === 'ar' ? 'en' : 'ar';
+    store.set('lang', lang);
+    render();
+  };
+}
+render();
+</script>
+</body>
+</html>

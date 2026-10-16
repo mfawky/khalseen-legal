@@ -209,7 +209,7 @@ function render() {
       <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="01xxxxxxxxx" value="${esc(phone)}">
       <button class="btn" id="open" style="margin-top:12px" ${busy ? 'disabled' : ''}>${esc(tr('open'))}</button></div>`;
     if (lastTried) html += `<p class="err">${esc(tr('notOnBill', { number: lastTried, name: s.creator }))}</p>`;
-    html += `<p class="center"><a class="btn ghost" style="display:inline-block;width:auto;text-decoration:none" href="qesma://claim/${encodeURIComponent(TOKEN)}">${esc(tr('openApp'))}</a></p>`;
+    html += `<p class="center"><a class="btn ghost" style="display:inline-block;width:auto;text-decoration:none" href="khalseen://claim/${encodeURIComponent(TOKEN)}">${esc(tr('openApp'))}</a></p>`;
     html += footer();
     app.innerHTML = html;
     bindHeader();

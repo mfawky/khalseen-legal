@@ -162,11 +162,11 @@ async function load() {
 
 function showExpired() {
   bar.hidden = true;
-  app.innerHTML = `${top()}<div class="hero"><div class="emoji">🔗</div><h1>${esc(tr('expired'))}</h1><p class="muted">${esc(tr('expiredHint'))}</p></div>${footer()}`;
+  app.innerHTML = `${header()}<div class="hero"><div class="emoji">🔗</div><h1>${esc(tr('expired'))}</h1><p class="muted">${esc(tr('expiredHint'))}</p></div>${footer()}`;
   bindTop();
 }
 
-function top() {
+function header() {
   return `<div class="top">
     <svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset="1" stop-color="#5530E0"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g)"/><rect x="23.4" y="32.4" width="53.2" height="12.4" rx="6.2" fill="#fff"/><rect x="23.4" y="55.2" width="53.2" height="12.4" rx="6.2" fill="#2ED3A0"/></svg>
     <div class="brand">${esc(tr('brand'))}</div>
@@ -199,7 +199,7 @@ function render() {
   applyDir();
   const people = s.people;
   const picks = myPicks();
-  let html = top();
+  let html = header();
   html += `<div class="hero"><div class="emoji">${s.status === 'closed' ? '🧾' : '🍽️'}</div><h1>${esc(s.title)}</h1>
     <div class="muted">${esc(s.status === 'closed' ? tr('saved', { name: s.creator }) : tr('intro', { name: s.creator }))}</div></div>`;
 

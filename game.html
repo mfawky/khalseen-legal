@@ -57,6 +57,7 @@
 
 <script>
 // Khalseen: Guess the check from a link. Works in any browser, no app or account needed.
+// It opens only for guests in the game: they type their phone number, and the server checks it.
 // Guesses stay secret until the check is revealed.
 const SUPABASE_URL = 'https://pzritawmzwpkufizkjlg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_3amcx0iubPsUS-xce247TA_drHa_ec_'; // the public key (the same one inside the app)
@@ -64,37 +65,45 @@ const TOKEN = location.hash.slice(1);
 
 const TEXTS = {
   en: {
-    brand: 'Khalseen', switchTo: 'العربية', title: 'Guess the check', intro: '{name} started a game. Guess the total before the check arrives. The closest guess wins!',
-    who: 'Who are you?', notOnList: "I'm not on the list", yourName: 'Your name', appUser: 'has the app', guess: 'Your guess ({cur})',
-    lock: 'Lock my guess', locked: 'Locked! You can change it until the check is revealed.', secret: 'Nobody sees your guess until the reveal.',
-    guessed: '{n} of {total} guessed', chooseFirst: 'Tap your name first', enterGuess: 'Enter a number',
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} started a game. Guess the total before the check arrives. The closest guess wins!',
+    phoneTitle: 'Enter your phone number', phoneHint: 'This game opens only for the people in it.', open: 'Join the game',
+    notInGame: "This number isn't in this game. If you have Khalseen, play in the app; otherwise ask {name} to add you.",
+    hi: 'Hi {name} 👋', notYou: 'Not you?', guess: 'Your guess ({cur})', lock: 'Lock my guess',
+    locked: 'Locked! You can change it until the check is revealed.', secret: 'Nobody sees your guess until the reveal.',
+    guessed: '{n} of {total} guessed', enterGuess: 'Enter a number',
     won: '{name} won! 🏆', real: 'The real check was {amount}', exact: 'Exact! 🎯', off: 'off by {amount}', noGuess: 'no guess',
     free: '{name} pays nothing this time 🎁', congrats: 'Congratulate {name} 🎉', expired: "This link doesn't work any more",
     tagline: 'Split it. Pay it. Khalseen.', privacy: 'Privacy',
   },
   ar: {
-    brand: 'خالصين', switchTo: 'English', title: 'خمّن الحساب', intro: '{name} بدأ لعبة. خمّن الحساب كله قبل ما ييجي. الأقرب يكسب!',
-    who: 'انت مين؟', notOnList: 'اسمي مش موجود', yourName: 'اسمك', appUser: 'عنده التطبيق', guess: 'تخمينك ({cur})',
-    lock: 'ثبّت تخميني', locked: 'اتثبّت! تقدر تغيّره لحد ما الحساب يتكشف.', secret: 'محدش هيشوف تخمينك لحد ما الحساب يتكشف.',
-    guessed: 'خمّن {n} من {total}', chooseFirst: 'اختار اسمك الأول', enterGuess: 'اكتب رقم',
+    brand: 'خالصين', switchTo: 'English', intro: '{name} بدأ لعبة. خمّن الحساب كله قبل ما ييجي. الأقرب يكسب!',
+    phoneTitle: 'اكتب رقم موبايلك', phoneHint: 'اللعبة دي بتفتح بس للي فيها.', open: 'ادخل اللعبة',
+    notInGame: 'الرقم ده مش في اللعبة. لو عندك خالصين العب من التطبيق، وإلا اطلب من {name} يضيفك.',
+    hi: 'أهلاً {name} 👋', notYou: 'مش انت؟', guess: 'تخمينك ({cur})', lock: 'ثبّت تخميني',
+    locked: 'اتثبّت! تقدر تغيّره لحد ما الحساب يتكشف.', secret: 'محدش هيشوف تخمينك لحد ما الحساب يتكشف.',
+    guessed: 'خمّن {n} من {total}', enterGuess: 'اكتب رقم',
     won: '{name} كسب! 🏆', real: 'الحساب الحقيقي كان {amount}', exact: 'بالظبط! 🎯', off: 'فرق {amount}', noGuess: 'مخمّنش',
     free: '{name} مش هيدفع حاجة المرة دي 🎁', congrats: 'باركوا لـ {name} 🎉', expired: 'اللينك ده مبقاش شغال',
     tagline: 'قسّمها، ادفعها، وخالصين.', privacy: 'الخصوصية',
   },
   fr: {
-    brand: 'Khalseen', switchTo: 'العربية', title: "Devine l'addition", intro: "{name} a lancé une partie. Devine le total avant l'arrivée de l'addition. Le plus proche gagne !",
-    who: 'Qui es-tu ?', notOnList: 'Je ne suis pas dans la liste', yourName: 'Ton prénom', appUser: "a l'app", guess: 'Ta réponse ({cur})',
-    lock: 'Valider ma réponse', locked: "Validé ! Tu peux la changer jusqu'à la révélation.", secret: 'Personne ne voit ta réponse avant la révélation.',
-    guessed: '{n} sur {total} ont deviné', chooseFirst: "Touche d'abord ton prénom", enterGuess: 'Entre un nombre',
+    brand: 'Khalseen', switchTo: 'العربية', intro: "{name} a lancé une partie. Devine le total avant l'arrivée de l'addition. Le plus proche gagne !",
+    phoneTitle: 'Entre ton numéro de téléphone', phoneHint: "Ce jeu s'ouvre seulement pour les joueurs.", open: 'Rejoindre la partie',
+    notInGame: "Ce numéro n'est pas dans la partie. Si tu as Khalseen, joue dans l'app ; sinon demande à {name} de t'ajouter.",
+    hi: 'Salut {name} 👋', notYou: 'Pas toi ?', guess: 'Ta réponse ({cur})', lock: 'Valider ma réponse',
+    locked: "Validé ! Tu peux la changer jusqu'à la révélation.", secret: 'Personne ne voit ta réponse avant la révélation.',
+    guessed: '{n} sur {total} ont deviné', enterGuess: 'Entre un nombre',
     won: '{name} a gagné ! 🏆', real: "L'addition était de {amount}", exact: 'Exact ! 🎯', off: 'à {amount} près', noGuess: 'pas de réponse',
     free: '{name} ne paie rien cette fois 🎁', congrats: 'Félicitez {name} 🎉', expired: 'Ce lien ne fonctionne plus',
     tagline: 'Partage. Paie. Khalseen.', privacy: 'Confidentialité',
   },
   de: {
-    brand: 'Khalseen', switchTo: 'العربية', title: 'Rate die Rechnung', intro: '{name} hat ein Spiel gestartet. Rate die Summe, bevor die Rechnung kommt. Wer am nächsten dran ist, gewinnt!',
-    who: 'Wer bist du?', notOnList: 'Ich stehe nicht auf der Liste', yourName: 'Dein Name', appUser: 'hat die App', guess: 'Dein Tipp ({cur})',
-    lock: 'Tipp festlegen', locked: 'Festgelegt! Du kannst ihn bis zur Auflösung ändern.', secret: 'Niemand sieht deinen Tipp vor der Auflösung.',
-    guessed: '{n} von {total} haben getippt', chooseFirst: 'Tippe zuerst auf deinen Namen', enterGuess: 'Gib eine Zahl ein',
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} hat ein Spiel gestartet. Rate die Summe, bevor die Rechnung kommt. Wer am nächsten dran ist, gewinnt!',
+    phoneTitle: 'Gib deine Handynummer ein', phoneHint: 'Dieses Spiel öffnet sich nur für die Mitspieler.', open: 'Mitspielen',
+    notInGame: 'Diese Nummer ist nicht im Spiel. Mit Khalseen spielst du in der App, sonst bitte {name}, dich hinzuzufügen.',
+    hi: 'Hallo {name} 👋', notYou: 'Nicht du?', guess: 'Dein Tipp ({cur})', lock: 'Tipp festlegen',
+    locked: 'Festgelegt! Du kannst ihn bis zur Auflösung ändern.', secret: 'Niemand sieht deinen Tipp vor der Auflösung.',
+    guessed: '{n} von {total} haben getippt', enterGuess: 'Gib eine Zahl ein',
     won: '{name} hat gewonnen! 🏆', real: 'Die Rechnung war {amount}', exact: 'Genau! 🎯', off: '{amount} daneben', noGuess: 'kein Tipp',
     free: '{name} zahlt diesmal nichts 🎁', congrats: 'Gratuliert {name} 🎉', expired: 'Dieser Link funktioniert nicht mehr',
     tagline: 'Teilen. Zahlen. Khalseen.', privacy: 'Datenschutz',
@@ -116,6 +125,7 @@ async function rpc(name, args) {
     method: 'POST',
     headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify(args),
+    signal: AbortSignal.timeout(20000),
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new Error((data && data.message) || 'Something went wrong');
@@ -123,9 +133,8 @@ async function rpc(name, args) {
 }
 
 let g = null;
-let who = store.get('player:' + TOKEN); // my player id
-let newName = '';
-let guessText = store.get('guess:' + TOKEN) || '';
+let phone = store.get('phone:' + TOKEN) || '';
+let guessText = '';
 let note = '';
 let busy = false;
 const app = document.getElementById('app');
@@ -147,8 +156,8 @@ const footer = () => `<footer class="small">${esc(tr('tagline'))} · <a href="pr
 async function load() {
   if (!TOKEN) return expired();
   try {
-    g = await rpc('game_public', { p_token: TOKEN });
-    if (who && !g.players.some((p) => p.id === who)) who = null;
+    g = await rpc('game_public', { p_token: TOKEN, p_phone: phone || null });
+    if (!g.needs_phone && !guessText && g.my_guess != null) guessText = String(Number(g.my_guess));
     render();
   } catch {
     expired();
@@ -163,32 +172,36 @@ function expired() {
 function render() {
   applyDir();
   let html = header();
-  if (g.status === 'revealed') {
-    const winners = g.players.filter((p) => p.winner).map((p) => p.name).join(' & ');
-    const ranked = [...g.players].sort((a, b) => (a.guess == null) - (b.guess == null) || Math.abs(a.guess - g.actual) - Math.abs(b.guess - g.actual));
-    html += `<div class="hero"><div class="emoji">🏆</div><h1>${esc(tr('won', { name: winners }))}</h1><div class="muted">${esc(tr('real', { amount: money(g.actual, g.currency) }))}</div></div>`;
-    html += `<div class="card prize">${esc(g.reward === 'free' ? tr('free', { name: winners }) : tr('congrats', { name: winners }))}</div>`;
-    html += `<div class="card">${ranked.map((p, i) => {
-      const off = p.guess == null ? null : Math.abs(p.guess - g.actual);
-      return `<div class="row"><b>${p.winner ? '🥇' : p.guess == null ? '–' : i + 1}</b><div class="name">${esc(p.name)}<div class="small">${esc(off == null ? tr('noGuess') : off === 0 ? tr('exact') : tr('off', { amount: money(off, g.currency) }))}</div></div><b>${p.guess == null ? '' : esc(money(p.guess, g.currency))}</b></div>`;
-    }).join('')}</div>`;
+  if (g.needs_phone) {
+    html += `<div class="hero"><div class="emoji">🎯</div><h1>${esc(g.title)}</h1><div class="muted">${esc(tr('intro', { name: g.creator }))}</div></div>`;
+    html += `<div class="card"><h2>${esc(tr('phoneTitle'))}</h2><div class="small">${esc(tr('phoneHint'))}</div>
+      <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="01xxxxxxxxx" value="${esc(phone)}">
+      <button class="btn" id="open" ${busy ? 'disabled' : ''}>${esc(tr('open'))}</button></div>`;
+    if (g.tried) html += `<p class="err">${esc(tr('notInGame', { name: g.creator }))}</p>`;
   } else {
-    const guessed = g.players.filter((p) => p.has_guess).length;
-    html += `<div class="hero"><div class="emoji">🎯</div><h1>${esc(g.title)}</h1><div class="muted">${esc(tr('intro', { name: g.creator }))}</div>
-      <div class="small" style="margin-top:6px">${esc(tr('guessed', { n: guessed, total: g.players.length }))}</div></div>`;
-    html += `<div class="card"><h2>${esc(tr('who'))}</h2><div class="chips">`;
-    for (const p of g.players) {
-      html += `<button class="chip ${p.id === who ? 'on' : ''}" data-who="${esc(p.id)}" ${p.guest ? '' : 'disabled'} title="${p.guest ? '' : esc(tr('appUser'))}">${esc(p.name)}${p.has_guess ? ' ✓' : ''}</button>`;
+    const me = g.players.find((p) => p.id === g.me);
+    html += `<div class="card" style="display:flex;align-items:center;gap:10px"><b style="flex:1">${esc(tr('hi', { name: me ? me.name : '' }))}</b><button class="chip" id="change">${esc(tr('notYou'))}</button></div>`;
+    if (g.status === 'revealed') {
+      const winners = g.players.filter((p) => p.winner).map((p) => p.name).join(' & ');
+      const ranked = [...g.players].sort((a, b) => (a.guess == null) - (b.guess == null) || Math.abs(a.guess - g.actual) - Math.abs(b.guess - g.actual));
+      html += `<div class="hero"><div class="emoji">🏆</div><h1>${esc(tr('won', { name: winners }))}</h1><div class="muted">${esc(tr('real', { amount: money(g.actual, g.currency) }))}</div></div>`;
+      html += `<div class="card prize">${esc(g.reward === 'free' ? tr('free', { name: winners }) : tr('congrats', { name: winners }))}</div>`;
+      html += `<div class="card">${ranked.map((p, i) => {
+        const off = p.guess == null ? null : Math.abs(p.guess - g.actual);
+        return `<div class="row"><b>${p.winner ? '🥇' : p.guess == null ? '–' : i + 1}</b><div class="name">${esc(p.name)}<div class="small">${esc(off == null ? tr('noGuess') : off === 0 ? tr('exact') : tr('off', { amount: money(off, g.currency) }))}</div></div><b>${p.guess == null ? '' : esc(money(p.guess, g.currency))}</b></div>`;
+      }).join('')}</div>`;
+    } else {
+      const guessed = g.players.filter((p) => p.has_guess).length;
+      html += `<div class="hero"><div class="emoji">🎯</div><h1>${esc(g.title)}</h1><div class="muted">${esc(tr('intro', { name: g.creator }))}</div>
+        <div class="small" style="margin-top:6px">${esc(tr('guessed', { n: guessed, total: g.players.length }))}</div></div>`;
+      html += `<div class="card"><h2>${esc(tr('guess', { cur: g.currency }))}</h2>
+        <input class="big" id="guess" inputmode="decimal" placeholder="0" value="${esc(guessText)}">
+        <div class="small" style="margin-top:8px">${esc(tr('secret'))}</div>
+        <button class="btn" id="lock" ${busy ? 'disabled' : ''}>${esc(tr('lock'))}</button></div>`;
+      html += `<div class="card">${g.players.map((p) => `<div class="row"><div class="name">${esc(p.name)}</div><span>${p.has_guess ? '✓' : '…'}</span></div>`).join('')}</div>`;
     }
-    html += `<button class="chip ${who === '' ? 'on' : ''}" data-who="">＋ ${esc(tr('notOnList'))}</button></div>`;
-    if (who === '') html += `<input id="name" maxlength="40" placeholder="${esc(tr('yourName'))}" value="${esc(newName)}">`;
-    html += `</div>`;
-    html += `<div class="card"><h2>${esc(tr('guess', { cur: g.currency }))}</h2>
-      <input class="big" id="guess" inputmode="decimal" placeholder="0" value="${esc(guessText)}">
-      <div class="small" style="margin-top:8px">${esc(tr('secret'))}</div>
-      <button class="btn" id="lock" ${busy ? 'disabled' : ''}>${esc(tr('lock'))}</button></div>`;
-    if (note) html += `<p class="${note.startsWith('!') ? 'err' : 'ok'}">${esc(note.replace(/^!/, ''))}</p>`;
   }
+  if (note) html += `<p class="${note.startsWith('!') ? 'err' : 'ok'}">${esc(note.replace(/^!/, ''))}</p>`;
   html += footer();
   app.innerHTML = html;
   bind();
@@ -201,33 +214,52 @@ function bind() {
     applyDir();
     g ? render() : expired();
   };
-  app.querySelectorAll('[data-who]').forEach((b) => (b.onclick = () => {
-    who = b.dataset.who;
-    if (who) store.set('player:' + TOKEN, who);
+  const phoneInput = document.getElementById('phone');
+  if (phoneInput) {
+    phoneInput.oninput = (e) => (phone = e.target.value);
+    phoneInput.onkeydown = (e) => e.key === 'Enter' && join();
+    document.getElementById('open').onclick = join;
+  }
+  const change = document.getElementById('change');
+  if (change) change.onclick = () => {
+    phone = '';
+    guessText = '';
     note = '';
-    render();
-  }));
-  const name = document.getElementById('name');
-  if (name) name.oninput = (e) => (newName = e.target.value);
+    store.set('phone:' + TOKEN, '');
+    load();
+  };
   const guess = document.getElementById('guess');
   if (guess) guess.oninput = (e) => (guessText = e.target.value);
   const lock = document.getElementById('lock');
   if (lock) lock.onclick = submit;
 }
 
+async function join() {
+  if (!phone.trim()) return;
+  busy = true;
+  render();
+  try {
+    g = await rpc('game_public', { p_token: TOKEN, p_phone: phone.trim() });
+    if (!g.needs_phone) {
+      store.set('phone:' + TOKEN, phone.trim());
+      if (g.my_guess != null) guessText = String(Number(g.my_guess));
+    }
+  } catch {
+    return expired();
+  }
+  busy = false;
+  render();
+}
+
 async function submit() {
   const value = Number(String(guessText).replace(/[^\d.]/g, ''));
-  if (who === null || (who === '' && !newName.trim())) { note = '!' + tr(who === '' ? 'yourName' : 'chooseFirst'); return render(); }
   if (!guessText.trim() || !(value >= 0)) { note = '!' + tr('enterGuess'); return render(); }
   busy = true;
   render();
   try {
-    const id = await rpc('guess_public', { p_token: TOKEN, p_player: who || null, p_name: who ? null : newName.trim(), p_guess: value });
-    who = id;
-    store.set('player:' + TOKEN, id);
-    store.set('guess:' + TOKEN, guessText);
+    await rpc('guess_public', { p_token: TOKEN, p_phone: phone, p_guess: value });
     note = tr('locked');
-    g = await rpc('game_public', { p_token: TOKEN });
+    g = await rpc('game_public', { p_token: TOKEN, p_phone: phone });
   } catch (e) {
     note = '!' + e.message;
   }
@@ -237,8 +269,8 @@ async function submit() {
 
 // The reveal shows up by itself while the page is open
 setInterval(async () => {
-  if (!g || g.status !== 'open' || busy || document.activeElement?.tagName === 'INPUT') return;
-  try { g = await rpc('game_public', { p_token: TOKEN }); render(); } catch {}
+  if (!g || g.needs_phone || g.status !== 'open' || busy || document.activeElement?.tagName === 'INPUT') return;
+  try { g = await rpc('game_public', { p_token: TOKEN, p_phone: phone }); render(); } catch {}
 }, 6000);
 
 applyDir();

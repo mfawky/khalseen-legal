@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Khalseen · Guess the check</title>
+  <meta name="description" content="Guess the check with your friends. The closest guess wins.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="icon.png">
+  <style>
+    :root {
+      --bg: #f2f2f7; --card: #ffffff; --alt: #eaeaf1; --text: #15151d; --muted: #6b6b80; --border: #dcdce5;
+      --primary: #6a48f5; --primary-soft: rgba(106, 72, 245, 0.12); --on-primary: #ffffff;
+      --green: #0f9f74; --red: #e0435b; --yellow-soft: rgba(185, 125, 0, 0.12);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0b10; --card: #15151d; --alt: #1e1e29; --text: #f5f5f7; --muted: #8c8ca1; --border: #272734;
+        --primary: #7c5cff; --primary-soft: rgba(124, 92, 255, 0.16); --green: #2ed3a0; --red: #ff6b81; --yellow-soft: rgba(255, 200, 87, 0.14);
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
+    body { font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", Tahoma, sans-serif; -webkit-tap-highlight-color: transparent; }
+    main { max-width: 560px; margin: 0 auto; padding: 16px 16px 64px; }
+    .top { display: flex; align-items: center; gap: 10px; }
+    .top .brand { font-weight: 900; font-size: 20px; flex: 1; }
+    .lang { border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; }
+    .hero { text-align: center; margin: 24px 0 16px; }
+    .hero .emoji { font-size: 52px; }
+    .hero h1 { margin: 4px 0; font-size: 26px; line-height: 1.2; }
+    .muted { color: var(--muted); }
+    .small { font-size: 13px; color: var(--muted); }
+    .card { background: var(--card); border-radius: 20px; padding: 16px; margin: 12px 0; }
+    .card h2 { margin: 0 0 8px; font-size: 17px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { border: 0; border-radius: 999px; padding: 8px 14px; background: var(--alt); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+    .chip.on { background: var(--primary); color: var(--on-primary); }
+    .chip:disabled { opacity: 0.45; cursor: default; }
+    input { width: 100%; margin-top: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--alt); color: var(--text); font: inherit; }
+    input.big { font-size: 28px; font-weight: 800; text-align: center; }
+    .btn { width: 100%; margin-top: 12px; border: 0; border-radius: 18px; padding: 16px; font: inherit; font-weight: 800; font-size: 17px; background: var(--primary); color: var(--on-primary); cursor: pointer; }
+    .btn:disabled { opacity: 0.6; }
+    .row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); }
+    .row:first-of-type { border-top: 0; }
+    .row .name { flex: 1; font-weight: 700; }
+    .ok { color: var(--green); font-weight: 700; text-align: center; }
+    .err { color: var(--red); font-weight: 700; text-align: center; }
+    .prize { background: var(--yellow-soft); font-weight: 700; text-align: center; }
+    .center { text-align: center; }
+    footer { text-align: center; margin-top: 28px; }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+<main id="app"><p class="center muted" style="margin-top:80px">…</p></main>
+
+<script>
+// Khalseen: Guess the check from a link. Works in any browser, no app or account needed.
+// It opens only for guests in the game: they type their phone number, and the server checks it.
+// Guesses stay secret until the check is revealed.
+const SUPABASE_URL = 'https://pzritawmzwpkufizkjlg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3amcx0iubPsUS-xce247TA_drHa_ec_'; // the public key (the same one inside the app)
+const TOKEN = location.hash.slice(1);
+
+const TEXTS = {
+  en: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} started a game. Guess the total before the check arrives. The closest guess wins!',
+    phoneTitle: 'Enter your phone number', phoneHint: 'This game opens only for the people in it.', open: 'Join the game',
+    notInGame: "{number} isn't in this game. Try another number, or ask {name} to add you.",
+    hi: 'Hi {name} 👋', notYou: 'Not you?', guess: 'Your guess ({cur})', lock: 'Lock my guess',
+    locked: 'Locked! You can change it until the check is revealed.', secret: 'Nobody sees your guess until the reveal.',
+    guessed: '{n} of {total} guessed', enterGuess: 'Enter a number',
+    won: '{name} won! 🏆', real: 'The real check was {amount}', exact: 'Exact! 🎯', off: 'off by {amount}', noGuess: 'no guess',
+    free: '{name} pays nothing this time 🎁', congrats: 'Congratulate {name} 🎉', expired: "This link doesn't work any more",
+    tagline: 'Split it. Pay it. Khalseen.', privacy: 'Privacy',
+  },
+  ar: {
+    brand: 'خالصين', switchTo: 'English', intro: '{name} بدأ لعبة. خمّن الحساب كله قبل ما ييجي. الأقرب يكسب!',
+    phoneTitle: 'اكتب رقم موبايلك', phoneHint: 'اللعبة دي بتفتح بس للي فيها.', open: 'ادخل اللعبة',
+    notInGame: 'الرقم {number} مش في اللعبة. جرّب رقم تاني، أو اطلب من {name} يضيفك.',
+    hi: 'أهلاً {name} 👋', notYou: 'مش انت؟', guess: 'تخمينك ({cur})', lock: 'ثبّت تخميني',
+    locked: 'اتثبّت! تقدر تغيّره لحد ما الحساب يتكشف.', secret: 'محدش هيشوف تخمينك لحد ما الحساب يتكشف.',
+    guessed: 'خمّن {n} من {total}', enterGuess: 'اكتب رقم',
+    won: '{name} كسب! 🏆', real: 'الحساب الحقيقي كان {amount}', exact: 'بالظبط! 🎯', off: 'فرق {amount}', noGuess: 'مخمّنش',
+    free: '{name} مش هيدفع حاجة المرة دي 🎁', congrats: 'باركوا لـ {name} 🎉', expired: 'اللينك ده مبقاش شغال',
+    tagline: 'قسّمها، ادفعها، وخالصين.', privacy: 'الخصوصية',
+  },
+  fr: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: "{name} a lancé une partie. Devine le total avant l'arrivée de l'addition. Le plus proche gagne !",
+    phoneTitle: 'Entre ton numéro de téléphone', phoneHint: "Ce jeu s'ouvre seulement pour les joueurs.", open: 'Rejoindre la partie',
+    notInGame: "{number} n'est pas dans la partie. Essaie un autre numéro ou demande à {name} de t'ajouter.",
+    hi: 'Salut {name} 👋', notYou: 'Pas toi ?', guess: 'Ta réponse ({cur})', lock: 'Valider ma réponse',
+    locked: "Validé ! Tu peux la changer jusqu'à la révélation.", secret: 'Personne ne voit ta réponse avant la révélation.',
+    guessed: '{n} sur {total} ont deviné', enterGuess: 'Entre un nombre',
+    won: '{name} a gagné ! 🏆', real: "L'addition était de {amount}", exact: 'Exact ! 🎯', off: 'à {amount} près', noGuess: 'pas de réponse',
+    free: '{name} ne paie rien cette fois 🎁', congrats: 'Félicitez {name} 🎉', expired: 'Ce lien ne fonctionne plus',
+    tagline: 'Partage. Paie. Khalseen.', privacy: 'Confidentialité',
+  },
+  de: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} hat ein Spiel gestartet. Rate die Summe, bevor die Rechnung kommt. Wer am nächsten dran ist, gewinnt!',
+    phoneTitle: 'Gib deine Handynummer ein', phoneHint: 'Dieses Spiel öffnet sich nur für die Mitspieler.', open: 'Mitspielen',
+    notInGame: '{number} ist nicht im Spiel. Versuch eine andere Nummer oder bitte {name}, dich hinzuzufügen.',
+    hi: 'Hallo {name} 👋', notYou: 'Nicht du?', guess: 'Dein Tipp ({cur})', lock: 'Tipp festlegen',
+    locked: 'Festgelegt! Du kannst ihn bis zur Auflösung ändern.', secret: 'Niemand sieht deinen Tipp vor der Auflösung.',
+    guessed: '{n} von {total} haben getippt', enterGuess: 'Gib eine Zahl ein',
+    won: '{name} hat gewonnen! 🏆', real: 'Die Rechnung war {amount}', exact: 'Genau! 🎯', off: '{amount} daneben', noGuess: 'kein Tipp',
+    free: '{name} zahlt diesmal nichts 🎁', congrats: 'Gratuliert {name} 🎉', expired: 'Dieser Link funktioniert nicht mehr',
+    tagline: 'Teilen. Zahlen. Khalseen.', privacy: 'Datenschutz',
+  },
+};
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+let lang = store.get('lang') || (navigator.language || 'en').slice(0, 2);
+if (!TEXTS[lang]) lang = 'en';
+const tr = (key, vars = {}) => Object.entries(vars).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), TEXTS[lang][key]);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n, cur) => `${Number(n).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })} ${lang === 'ar' && cur === 'EGP' ? 'ج.م' : cur}`;
+
+async function rpc(name, args) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+    signal: AbortSignal.timeout(20000),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((data && data.message) || 'Something went wrong');
+  return data;
+}
+
+let g = null;
+let phone = store.get('phone:' + TOKEN) || '';
+let guessText = '';
+let lastTried = ''; // the last number that wasn't in the game
+let note = '';
+let busy = false;
+const app = document.getElementById('app');
+
+function applyDir() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+}
+
+function header() {
+  return `<div class="top">
+    <svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset="1" stop-color="#5530E0"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g)"/><rect x="23.4" y="32.4" width="53.2" height="12.4" rx="6.2" fill="#fff"/><rect x="23.4" y="55.2" width="53.2" height="12.4" rx="6.2" fill="#2ED3A0"/></svg>
+    <div class="brand">${esc(tr('brand'))}</div>
+    <button class="lang" id="lang">${esc(tr('switchTo'))}</button>
+  </div>`;
+}
+const footer = () => `<footer class="small">${esc(tr('tagline'))} · <a href="privacy.html">${esc(tr('privacy'))}</a></footer>`;
+
+async function load() {
+  if (!TOKEN) return expired();
+  try {
+    g = await rpc('game_public', { p_token: TOKEN, p_phone: phone || null });
+    if (!g.needs_phone && !guessText && g.my_guess != null) guessText = String(Number(g.my_guess));
+    render();
+  } catch {
+    expired();
+  }
+}
+
+function expired() {
+  app.innerHTML = `${header()}<div class="hero"><div class="emoji">🔗</div><h1>${esc(tr('expired'))}</h1></div>${footer()}`;
+  bind();
+}
+
+function render() {
+  applyDir();
+  let html = header();
+  if (g.needs_phone) {
+    html += `<div class="hero"><div class="emoji">🎯</div><h1>${esc(g.title)}</h1><div class="muted">${esc(tr('intro', { name: g.creator }))}</div></div>`;
+    html += `<div class="card"><h2>${esc(tr('phoneTitle'))}</h2><div class="small">${esc(tr('phoneHint'))}</div>
+      <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="01xxxxxxxxx" value="${esc(phone)}">
+      <button class="btn" id="open" ${busy ? 'disabled' : ''}>${esc(tr('open'))}</button></div>`;
+    if (lastTried) html += `<p class="err">${esc(tr('notInGame', { number: lastTried, name: g.creator }))}</p>`;
+  } else {
+    const me = g.players.find((p) => p.id === g.me);
+    html += `<div class="card" style="display:flex;align-items:center;gap:10px"><b style="flex:1">${esc(tr('hi', { name: me ? me.name : '' }))}</b><button class="chip" id="change">${esc(tr('notYou'))}</button></div>`;
+    if (g.status === 'revealed') {
+      const winners = g.players.filter((p) => p.winner).map((p) => p.name).join(' & ');
+      const ranked = [...g.players].sort((a, b) => (a.guess == null) - (b.guess == null) || Math.abs(a.guess - g.actual) - Math.abs(b.guess - g.actual));
+      html += `<div class="hero"><div class="emoji">🏆</div><h1>${esc(tr('won', { name: winners }))}</h1><div class="muted">${esc(tr('real', { amount: money(g.actual, g.currency) }))}</div></div>`;
+      html += `<div class="card prize">${esc(g.reward === 'free' ? tr('free', { name: winners }) : tr('congrats', { name: winners }))}</div>`;
+      html += `<div class="card">${ranked.map((p, i) => {
+        const off = p.guess == null ? null : Math.abs(p.guess - g.actual);
+        return `<div class="row"><b>${p.winner ? '🥇' : p.guess == null ? '–' : i + 1}</b><div class="name">${esc(p.name)}<div class="small">${esc(off == null ? tr('noGuess') : off === 0 ? tr('exact') : tr('off', { amount: money(off, g.currency) }))}</div></div><b>${p.guess == null ? '' : esc(money(p.guess, g.currency))}</b></div>`;
+      }).join('')}</div>`;
+    } else {
+      const guessed = g.players.filter((p) => p.has_guess).length;
+      html += `<div class="hero"><div class="emoji">🎯</div><h1>${esc(g.title)}</h1><div class="muted">${esc(tr('intro', { name: g.creator }))}</div>
+        <div class="small" style="margin-top:6px">${esc(tr('guessed', { n: guessed, total: g.players.length }))}</div></div>`;
+      html += `<div class="card"><h2>${esc(tr('guess', { cur: g.currency }))}</h2>
+        <input class="big" id="guess" inputmode="decimal" placeholder="0" value="${esc(guessText)}">
+        <div class="small" style="margin-top:8px">${esc(tr('secret'))}</div>
+        <button class="btn" id="lock" ${busy ? 'disabled' : ''}>${esc(tr('lock'))}</button></div>`;
+      html += `<div class="card">${g.players.map((p) => `<div class="row"><div class="name">${esc(p.name)}</div><span>${p.has_guess ? '✓' : '…'}</span></div>`).join('')}</div>`;
+    }
+  }
+  if (note) html += `<p class="${note.startsWith('!') ? 'err' : 'ok'}">${esc(note.replace(/^!/, ''))}</p>`;
+  html += footer();
+  app.innerHTML = html;
+  bind();
+}
+
+function bind() {
+  document.getElementById('lang').onclick = () => {
+    lang = lang === 'ar' ? 'en' : 'ar';
+    store.set('lang', lang);
+    applyDir();
+    g ? render() : expired();
+  };
+  const phoneInput = document.getElementById('phone');
+  if (phoneInput) {
+    phoneInput.oninput = (e) => (phone = e.target.value);
+    // Only react to Enter (returning false here would block every other key, digits included)
+    phoneInput.onkeydown = (e) => {
+      if (e.key === 'Enter') join();
+    };
+    document.getElementById('open').onclick = join;
+  }
+  const change = document.getElementById('change');
+  if (change) change.onclick = () => {
+    phone = '';
+    guessText = '';
+    note = '';
+    store.set('phone:' + TOKEN, '');
+    load();
+  };
+  const guess = document.getElementById('guess');
+  if (guess) guess.oninput = (e) => (guessText = e.target.value);
+  const lock = document.getElementById('lock');
+  if (lock) lock.onclick = submit;
+}
+
+async function join() {
+  const tried = phone.trim();
+  if (!tried) return;
+  busy = true;
+  render();
+  try {
+    g = await rpc('game_public', { p_token: TOKEN, p_phone: tried });
+    if (!g.needs_phone) {
+      store.set('phone:' + TOKEN, tried);
+      lastTried = '';
+      if (g.my_guess != null) guessText = String(Number(g.my_guess));
+    } else {
+      // Not in the game: empty the box so the next number can be typed straight away
+      lastTried = tried;
+      phone = '';
+    }
+  } catch {
+    return expired();
+  }
+  busy = false;
+  render();
+  if (g.needs_phone) document.getElementById('phone')?.focus();
+}
+
+async function submit() {
+  const value = Number(String(guessText).replace(/[^\d.]/g, ''));
+  if (!guessText.trim() || !(value >= 0)) { note = '!' + tr('enterGuess'); return render(); }
+  busy = true;
+  render();
+  try {
+    await rpc('guess_public', { p_token: TOKEN, p_phone: phone, p_guess: value });
+    note = tr('locked');
+    g = await rpc('game_public', { p_token: TOKEN, p_phone: phone });
+  } catch (e) {
+    note = '!' + e.message;
+  }
+  busy = false;
+  render();
+}
+
+// The reveal shows up by itself while the page is open
+setInterval(async () => {
+  if (!g || g.needs_phone || g.status !== 'open' || busy || document.activeElement?.tagName === 'INPUT') return;
+  try { g = await rpc('game_public', { p_token: TOKEN, p_phone: phone }); render(); } catch {}
+}, 6000);
+
+applyDir();
+load();
+</script>
+</body>
+</html>

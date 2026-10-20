@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Khalseen · Join the group</title>
+  <meta name="description" content="You're invited to a group on Khalseen: split bills with friends.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="icon.png">
+  <style>
+    :root { --bg: #f2f2f7; --card: #ffffff; --alt: #eaeaf1; --text: #15151d; --muted: #6b6b80; --border: #dcdce5; --primary: #6a48f5; --on-primary: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0b0b10; --card: #15151d; --alt: #1e1e29; --text: #f5f5f7; --muted: #8c8ca1; --border: #272734; --primary: #7c5cff; }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
+    body { font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", Tahoma, sans-serif; }
+    main { max-width: 480px; margin: 0 auto; padding: 16px 16px 48px; }
+    .top { display: flex; align-items: center; gap: 10px; }
+    .top .brand { font-weight: 900; font-size: 20px; flex: 1; }
+    .lang { border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; }
+    .hero { text-align: center; margin: 32px 0 16px; }
+    .hero .emoji { font-size: 52px; }
+    .hero h1 { margin: 6px 0; font-size: 26px; line-height: 1.25; }
+    .muted { color: var(--muted); }
+    .card { background: var(--card); border-radius: 20px; padding: 16px; margin: 12px 0; text-align: center; }
+    .code { font-size: 28px; font-weight: 900; letter-spacing: 4px; }
+    .btn { display: block; width: 100%; border: 0; border-radius: 18px; padding: 16px; font: inherit; font-weight: 800; font-size: 17px; background: var(--primary); color: var(--on-primary); text-align: center; text-decoration: none; margin-top: 10px; }
+    .btn.secondary { background: var(--alt); color: var(--text); }
+    footer { text-align: center; margin-top: 28px; font-size: 13px; color: var(--muted); }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+<main id="app"><p class="muted" style="text-align:center;margin-top:80px">…</p></main>
+<script>
+// Khalseen: a group invite. Shows which group it is and opens it in the app.
+const SUPABASE_URL = 'https://pzritawmzwpkufizkjlg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3amcx0iubPsUS-xce247TA_drHa_ec_'; // the public key (the same one inside the app)
+const ANDROID_PACKAGE = 'com.khalseen.app';
+const CODE = location.hash.slice(1).toUpperCase();
+
+const TEXTS = {
+  en: {
+    brand: 'Khalseen', switchTo: 'العربية', invited: "You're invited to join", members: '{n} members', open: 'Open in Khalseen',
+    get: "Don't have Khalseen? Get the app", orCode: 'Or open Khalseen → Groups → Join, and enter this code:',
+    notFound: "This invite doesn't work any more", notFoundHint: 'Ask your friend for a new link.', tagline: 'Split it. Pay it. Khalseen.', privacy: 'Privacy',
+  },
+  ar: {
+    brand: 'خالصين', switchTo: 'English', invited: 'معزوم تنضم لـ', members: '{n} أعضاء', open: 'افتح في خالصين',
+    get: 'معندكش خالصين؟ نزّل التطبيق', orCode: 'أو افتح خالصين ← المجموعات ← انضمام، واكتب الكود ده:',
+    notFound: 'الدعوة دي مبقتش شغالة', notFoundHint: 'اطلب من صاحبك لينك جديد.', tagline: 'قسّمها، ادفعها، وخالصين.', privacy: 'الخصوصية',
+  },
+  fr: {
+    brand: 'Khalseen', switchTo: 'العربية', invited: 'Tu es invité à rejoindre', members: '{n} membres', open: 'Ouvrir dans Khalseen',
+    get: "Pas encore Khalseen ? Télécharge l'app", orCode: 'Ou ouvre Khalseen → Groupes → Rejoindre, et entre ce code :',
+    notFound: 'Cette invitation ne fonctionne plus', notFoundHint: 'Demande un nouveau lien à ton ami.', tagline: 'Partage. Paie. Khalseen.', privacy: 'Confidentialité',
+  },
+  de: {
+    brand: 'Khalseen', switchTo: 'العربية', invited: 'Du bist eingeladen in', members: '{n} Mitglieder', open: 'In Khalseen öffnen',
+    get: 'Noch kein Khalseen? App holen', orCode: 'Oder öffne Khalseen → Gruppen → Beitreten und gib diesen Code ein:',
+    notFound: 'Diese Einladung funktioniert nicht mehr', notFoundHint: 'Bitte deinen Freund um einen neuen Link.', tagline: 'Teilen. Zahlen. Khalseen.', privacy: 'Datenschutz',
+  },
+};
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+let lang = store.get('lang') || (navigator.language || 'en').slice(0, 2);
+if (!TEXTS[lang]) lang = 'en';
+const tr = (key, vars = {}) => Object.entries(vars).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), TEXTS[lang][key]);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const app = document.getElementById('app');
+let group = null;
+
+// Android opens the app straight away (or the download page if it isn't installed)
+function openLink() {
+  const fallback = new URL('app.html', location.href).href;
+  if (/Android/i.test(navigator.userAgent)) {
+    return `intent://join/${encodeURIComponent(CODE)}#Intent;scheme=khalseen;package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+  }
+  return `khalseen://join/${encodeURIComponent(CODE)}`;
+}
+
+function header() {
+  return `<div class="top">
+    <svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset="1" stop-color="#5530E0"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g)"/><rect x="23.4" y="32.4" width="53.2" height="12.4" rx="6.2" fill="#fff"/><rect x="23.4" y="55.2" width="53.2" height="12.4" rx="6.2" fill="#2ED3A0"/></svg>
+    <div class="brand">${esc(tr('brand'))}</div>
+    <button class="lang" id="lang">${esc(tr('switchTo'))}</button>
+  </div>`;
+}
+
+function render() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  let html = header();
+  if (!group) {
+    html += `<div class="hero"><div class="emoji">🔗</div><h1>${esc(tr('notFound'))}</h1><p class="muted">${esc(tr('notFoundHint'))}</p></div>`;
+  } else {
+    html += `<div class="hero"><div class="emoji">👥</div><div class="muted">${esc(tr('invited'))}</div><h1>${esc(group.name)}</h1><div class="muted">${esc(tr('members', { n: group.members }))}</div></div>`;
+    html += `<a class="btn" id="open" href="${esc(openLink())}">${esc(tr('open'))}</a>`;
+    html += `<a class="btn secondary" href="app.html">${esc(tr('get'))}</a>`;
+    html += `<div class="card"><div class="muted">${esc(tr('orCode'))}</div><div class="code">${esc(CODE)}</div></div>`;
+  }
+  html += `<footer>${esc(tr('tagline'))} · <a href="privacy.html">${esc(tr('privacy'))}</a></footer>`;
+  app.innerHTML = html;
+  document.getElementById('lang').onclick = () => {
+    lang = lang === 'ar' ? 'en' : 'ar';
+    store.set('lang', lang);
+    render();
+  };
+}
+
+async function load() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/group_invite_info`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_code: CODE }),
+      signal: AbortSignal.timeout(20000),
+    });
+    group = res.ok ? await res.json() : null;
+  } catch {
+    group = null;
+  }
+  render();
+}
+
+load();
+</script>
+</body>
+</html>

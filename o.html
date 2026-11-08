@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Khalseen · Collect the order</title>
+  <meta name="description" content="Add what you want to the order. Khalseen splits the bill later.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="icon.png">
+  <style>
+    :root {
+      --bg: #f2f2f7; --card: #ffffff; --alt: #eaeaf1; --text: #15151d; --muted: #6b6b80; --border: #dcdce5;
+      --primary: #6a48f5; --primary-soft: rgba(106, 72, 245, 0.12); --on-primary: #ffffff;
+      --green: #0f9f74; --green-soft: rgba(15, 159, 116, 0.12); --red: #e0435b; --yellow: #b97d00;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0b10; --card: #15151d; --alt: #1e1e29; --text: #f5f5f7; --muted: #8c8ca1; --border: #272734;
+        --primary: #7c5cff; --primary-soft: rgba(124, 92, 255, 0.16);
+        --green: #2ed3a0; --green-soft: rgba(46, 211, 160, 0.14); --red: #ff6b81; --yellow: #ffc857;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); }
+    body { font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Arabic", Tahoma, sans-serif; -webkit-tap-highlight-color: transparent; }
+    main { max-width: 560px; margin: 0 auto; padding: 16px 16px 120px; }
+    .top { display: flex; align-items: center; gap: 10px; }
+    .top .brand { font-weight: 900; font-size: 20px; flex: 1; }
+    .lang { border: 1px solid var(--border); background: var(--card); color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; }
+    .hero { text-align: center; margin: 24px 0 16px; }
+    .hero .emoji { font-size: 44px; }
+    .hero h1 { margin: 4px 0; font-size: 26px; line-height: 1.2; }
+    .muted { color: var(--muted); }
+    .small { font-size: 13px; color: var(--muted); }
+    .card { background: var(--card); border-radius: 20px; padding: 16px; margin: 12px 0; }
+    .card h2 { margin: 0 0 8px; font-size: 17px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 8px 14px; background: var(--alt); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+    .chip.on { background: var(--primary); color: var(--on-primary); }
+    .chip .tick { font-size: 12px; opacity: 0.8; }
+    input[type=text], input[type=tel] { width: 100%; margin-top: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--alt); color: var(--text); font: inherit; }
+    .item { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); }
+    .item:first-of-type { border-top: 0; }
+    .item .info { flex: 1; min-width: 0; }
+    .item .name { font-weight: 700; overflow-wrap: anywhere; }
+    .qty { color: var(--primary); }
+    .stepper { display: flex; align-items: center; gap: 4px; }
+    .stepper button, .check { width: 40px; height: 40px; border-radius: 20px; border: 0; background: var(--primary-soft); color: var(--primary); font-size: 22px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+    .stepper button:disabled { background: var(--alt); color: var(--muted); cursor: default; }
+    .stepper .n { min-width: 28px; text-align: center; font-weight: 800; font-size: 17px; }
+    .check { border: 2px solid var(--border); background: transparent; color: transparent; font-size: 18px; }
+    .check.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+    .total { background: var(--primary-soft); }
+    .total b { font-size: 17px; }
+    .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 30%); }
+    .bar .inner { max-width: 560px; margin: 0 auto; }
+    .btn { width: 100%; border: 0; border-radius: 18px; padding: 16px; font: inherit; font-weight: 800; font-size: 17px; background: var(--primary); color: var(--on-primary); cursor: pointer; }
+    .btn:disabled { opacity: 0.6; }
+    .btn.ghost { background: transparent; color: var(--primary); font-weight: 700; font-size: 15px; padding: 10px; }
+    .ok { color: var(--green); font-weight: 700; text-align: center; }
+    .err { color: var(--red); font-weight: 700; text-align: center; }
+    .pay { font-size: 22px; font-weight: 800; color: var(--red); text-align: center; margin: 6px 0; }
+    .even { font-size: 22px; font-weight: 800; color: var(--green); text-align: center; }
+    .ways { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 14px; }
+    .way { display: flex; align-items: center; gap: 10px; background: var(--alt); border-radius: 14px; padding: 10px 12px; text-align: start; }
+    .way .v { flex: 1; font-weight: 700; word-break: break-all; }
+    .paybtn { display: block; background: var(--primary); color: var(--on-primary); text-decoration: none; border-radius: 999px; padding: 13px; font-weight: 800; text-align: center; }
+    .center { text-align: center; }
+    footer { text-align: center; margin-top: 28px; }
+    footer a { color: var(--primary); }
+  </style>
+</head>
+<body>
+<main id="app"><p class="center muted" style="margin-top:80px">…</p></main>
+<div class="bar" id="bar" hidden><div class="inner" id="barInner"></div></div>
+
+<script>
+// Khalseen: "collect the order" link. Before the bill comes, everyone adds what they want.
+// Works in any browser, no app or account needed. It opens only for people on the bill: they type
+// their phone number, and the server checks it.
+const SUPABASE_URL = 'https://pzritawmzwpkufizkjlg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3amcx0iubPsUS-xce247TA_drHa_ec_'; // the public key (the same one inside the app)
+const TOKEN = location.hash.slice(1);
+
+const TEXTS = {
+  en: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} is collecting the order. Add what you want.',
+    phoneTitle: 'Enter your phone number', phoneHint: 'This order opens only for the people in it.', open: 'Open the order',
+    notOnBill: "{number} isn't on this order. Try another number, or ask {name} to add you.", hi: 'Hi {name} 👋', notYou: 'Not you?',
+    your: 'What do you want?', placeholder: 'e.g. Koshari, large', add: 'Add', everyone: 'The whole order', none: 'Nothing yet',
+    send: 'Send my order', sent: 'Sent! {name} sees your order. You can still change it.', closed: 'The order is closed',
+    expired: "This link doesn't work any more", expiredHint: 'Ask your friend to send a new one.', yourShare: 'Your share: {amount}',
+    payTo: 'Pay {name} {amount}', nothing: 'Nothing to pay. Khalseen 🤝', saved: '{name} saved the bill',
+    tagline: 'Split it. Pay it. Khalseen.', privacy: 'Privacy',
+    payWith: 'Pay with {method}', copy: 'Copy', copied: 'Copied ✓', m_instapay: 'InstaPay', m_wallet: 'Wallet', m_bank: 'Bank account', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'Payment link', m_other: 'Other',
+  },
+  ar: {
+    brand: 'خالصين', switchTo: 'English', intro: '{name} بيجمّع الأوردر. ضيف اللي عايزه.',
+    phoneTitle: 'اكتب رقم موبايلك', phoneHint: 'الأوردر ده بيفتح بس للناس اللي فيه.', open: 'افتح الأوردر',
+    notOnBill: '{number} مش في الأوردر ده. جرّب رقم تاني، أو قول لـ{name} يضيفك.', hi: 'أهلًا {name} 👋', notYou: 'مش انت؟',
+    your: 'عايز إيه؟', placeholder: 'مثلًا: كشري كبير', add: 'ضيف', everyone: 'الأوردر كله', none: 'لسه مفيش حاجة',
+    send: 'ابعت طلبي', sent: 'اتبعت! {name} شايف طلبك. لسه تقدر تغيّره.', closed: 'الأوردر اتقفل',
+    expired: 'اللينك ده مبقاش شغال', expiredHint: 'اطلب من صاحبك يبعتلك لينك جديد.', yourShare: 'نصيبك: {amount}',
+    payTo: 'ادفع لـ{name} {amount}', nothing: 'مفيش عليك حاجة. خالصين 🤝', saved: '{name} حفظ الفاتورة',
+    tagline: 'قسّمها، ادفعها، وخالصين.', privacy: 'الخصوصية',
+    payWith: 'ادفع بـ{method}', copy: 'انسخ', copied: 'اتنسخ ✓', m_instapay: 'إنستاباي', m_wallet: 'محفظة', m_bank: 'حساب بنكي', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'لينك دفع', m_other: 'طريقة تانية',
+  },
+  fr: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} prend la commande. Ajoute ce que tu veux.',
+    phoneTitle: 'Entre ton numéro de téléphone', phoneHint: "Cette commande s'ouvre seulement pour les personnes dedans.", open: 'Ouvrir la commande',
+    notOnBill: "{number} n'est pas dans cette commande. Essaie un autre numéro, ou demande à {name} de t'ajouter.", hi: 'Salut {name} 👋', notYou: 'Pas toi ?',
+    your: 'Tu veux quoi ?', placeholder: 'ex. Koshari, grand', add: 'Ajouter', everyone: 'Toute la commande', none: 'Rien pour le moment',
+    send: 'Envoyer ma commande', sent: 'Envoyé ! {name} voit ta commande. Tu peux encore la changer.', closed: 'La commande est fermée',
+    expired: 'Ce lien ne marche plus', expiredHint: "Demande à ton ami d'en envoyer un nouveau.", yourShare: 'Ta part : {amount}',
+    payTo: 'Paie {amount} à {name}', nothing: 'Rien à payer. Khalseen 🤝 (quittes)', saved: "{name} a enregistré l'addition",
+    tagline: 'Partage. Paie. Khalseen.', privacy: 'Confidentialité',
+    payWith: 'Payer avec {method}', copy: 'Copier', copied: 'Copié ✓', m_instapay: 'InstaPay', m_wallet: 'Portefeuille', m_bank: 'Compte bancaire', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'Lien de paiement', m_other: 'Autre',
+  },
+  de: {
+    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} sammelt die Bestellung. Trag ein, was du willst.',
+    phoneTitle: 'Gib deine Handynummer ein', phoneHint: 'Diese Bestellung öffnet sich nur für die Leute darin.', open: 'Bestellung öffnen',
+    notOnBill: '{number} ist nicht in dieser Bestellung. Versuch eine andere Nummer oder bitte {name}, dich hinzuzufügen.', hi: 'Hallo {name} 👋', notYou: 'Nicht du?',
+    your: 'Was willst du?', placeholder: 'z. B. Koshari, groß', add: 'Hinzufügen', everyone: 'Die ganze Bestellung', none: 'Noch nichts',
+    send: 'Meine Bestellung senden', sent: 'Gesendet! {name} sieht deine Bestellung. Du kannst sie noch ändern.', closed: 'Die Bestellung ist geschlossen',
+    expired: 'Dieser Link funktioniert nicht mehr', expiredHint: 'Bitte deinen Freund um einen neuen.', yourShare: 'Dein Anteil: {amount}',
+    payTo: 'Zahle {name} {amount}', nothing: 'Nichts zu zahlen. Khalseen 🤝 (quitt)', saved: '{name} hat die Rechnung gespeichert',
+    tagline: 'Teilen. Zahlen. Khalseen.', privacy: 'Datenschutz',
+    payWith: 'Mit {method} zahlen', copy: 'Kopieren', copied: 'Kopiert ✓', m_instapay: 'InstaPay', m_wallet: 'Wallet', m_bank: 'Bankkonto', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'Zahlungslink', m_other: 'Andere',
+  },
+};
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+
+let lang = store.get('lang') || (navigator.language || 'en').slice(0, 2);
+if (!TEXTS[lang]) lang = 'en';
+const tr = (key, vars = {}) => Object.entries(vars).reduce((t, [k, v]) => t.split(`{${k}}`).join(String(v)), TEXTS[lang][key] ?? TEXTS.en[key] ?? '');
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n, cur) => `${Number(n).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US', { maximumFractionDigits: 2 })} ${lang === 'ar' && cur === 'EGP' ? 'ج.م' : cur}`;
+
+async function rpc(name, args) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+    signal: AbortSignal.timeout(20000),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((data && data.message) || 'Something went wrong');
+  return data;
+}
+
+let s = null;                                   // the order (only its title until the number checks out)
+let phone = store.get('phone:' + TOKEN) || '';  // my number for this link
+let mine = null;                                // my lines while editing: [{ name, qty }]
+let draft = '';                                 // what's typed in the "add" box
+let lastTried = '';                             // the last number that wasn't on the order
+let note = '';
+let busy = false;
+
+const app = document.getElementById('app');
+const bar = document.getElementById('bar');
+const barInner = document.getElementById('barInner');
+
+async function load() {
+  if (!TOKEN) return showExpired();
+  try {
+    s = await rpc('order_session', { p_token: TOKEN, p_phone: phone || null });
+    render();
+  } catch (e) {
+    showExpired();
+  }
+}
+
+function header() {
+  return `<div class="top">
+    <svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset="1" stop-color="#5530E0"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g)"/><path d="M31 20 H69 V76 L64.25 81 L59.5 76 L54.75 81 L50 76 L45.25 81 L40.5 76 L35.75 81 L31 76 Z" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><rect x="39" y="37" width="22" height="6" rx="3" fill="#6A48F5"/><rect x="39" y="51" width="22" height="6" rx="3" fill="#2ED3A0"/></svg>
+    <div class="brand">${esc(tr('brand'))}</div>
+    <button class="lang" id="lang">${esc(tr('switchTo'))}</button>
+  </div>`;
+}
+const footer = () => `<footer class="small">${esc(tr('tagline'))} · <a href="privacy.html">${esc(tr('privacy'))}</a></footer>`;
+
+function bindHeader() {
+  document.getElementById('lang').onclick = () => {
+    lang = lang === 'ar' ? 'en' : 'ar';
+    store.set('lang', lang);
+    applyDir();
+    s ? render() : showExpired();
+  };
+}
+
+function applyDir() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+}
+
+function showExpired() {
+  bar.hidden = true;
+  app.innerHTML = `${header()}<div class="hero"><div class="emoji">🔗</div><h1>${esc(tr('expired'))}</h1><p class="muted">${esc(tr('expiredHint'))}</p></div>${footer()}`;
+  bindHeader();
+}
+
+const nameOf = (key) => (s.people.find((p) => p.key === key) || {}).name || '?';
+const myLines = () => mine || s.lines.filter((l) => l.person_key === s.me).map((l) => ({ name: l.name, qty: Number(l.qty) }));
+
+// Everyone's lines (mine as I'm editing them), one per dish: "3× Pepsi · Ahmed 2, Sara 1"
+function combined() {
+  const all = [...s.lines.filter((l) => l.person_key !== s.me), ...myLines().map((l) => ({ ...l, person_key: s.me }))];
+  const rows = new Map();
+  all.forEach((l) => {
+    const k = l.name.trim().replace(/\s+/g, ' ').toLowerCase();
+    const r = rows.get(k) || { name: l.name.trim(), qty: 0, who: new Map() };
+    r.qty += Number(l.qty);
+    r.who.set(l.person_key, (r.who.get(l.person_key) || 0) + Number(l.qty));
+    rows.set(k, r);
+  });
+  return [...rows.values()];
+}
+
+// How to pay someone: a button for a payment link (https only: these come from people), else the number with Copy
+function wayName(w) { return w.label || tr('m_' + w.type) || w.type; }
+function waysHtml(ways) {
+  if (!Array.isArray(ways) || !ways.length) return '';
+  return '<div class="ways">' + ways.map((w) => /^https:\/\//i.test(w.url || '')
+    ? `<a class="paybtn" href="${esc(w.url)}" target="_blank" rel="noopener">${esc(tr('payWith', { method: wayName(w) }))}</a>`
+    : `<div class="way"><span class="small">${esc(wayName(w))}</span><span class="v">${esc(w.value)}</span><button class="chip" data-copy="${esc(w.value)}">${esc(tr('copy'))}</button></div>`).join('') + '</div>';
+}
+function copyText(value, button) {
+  const done = () => { button.textContent = tr('copied'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(value).then(done, () => {});
+    return;
+  }
+  const area = document.createElement('textarea');
+  area.value = value;
+  document.body.appendChild(area);
+  area.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  area.remove();
+}
+
+function render() {
+  applyDir();
+  let html = header();
+  html += `<div class="hero"><div class="emoji">${s.status === 'closed' ? '🧾' : '📝'}</div><h1>${esc(s.title)}</h1>
+    <div class="muted">${esc(s.status === 'closed' ? tr('saved', { name: s.creator }) : tr('intro', { name: s.creator }))}</div></div>`;
+
+  // Not identified yet: the phone number
+  if (s.needs_phone) {
+    bar.hidden = true;
+    html += `<div class="card"><h2>${esc(tr('phoneTitle'))}</h2><div class="small">${esc(tr('phoneHint'))}</div>
+      <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="01xxxxxxxxx" value="${esc(phone)}">
+      <button class="btn" id="open" style="margin-top:12px" ${busy ? 'disabled' : ''}>${esc(tr('open'))}</button></div>`;
+    if (lastTried) html += `<p class="err">${esc(tr('notOnBill', { number: lastTried, name: s.creator }))}</p>`;
+    html += footer();
+    app.innerHTML = html;
+    bindHeader();
+    const input = document.getElementById('phone');
+    input.oninput = (e) => { phone = e.target.value; };
+    // Only react to Enter (returning false here would block every other key, digits included)
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') openOrder();
+    };
+    document.getElementById('open').onclick = openOrder;
+    return;
+  }
+
+  html += `<div class="card" style="display:flex;align-items:center;gap:10px"><b style="flex:1">${esc(tr('hi', { name: nameOf(s.me) }))}</b><button class="chip" id="change">${esc(tr('notYou'))}</button></div>`;
+
+  if (s.status === 'closed') {
+    // The bill is saved: my share and who to pay, with how to pay them
+    const r = (s.result || []).find((x) => x.key === s.me);
+    if (r) {
+      html += `<div class="card center"><div class="muted">${esc(tr('yourShare', { amount: money(r.share, s.currency) }))}</div>`;
+      html += r.pays.length ? r.pays.map((p) => `<div class="pay">${esc(tr('payTo', { name: p.to, amount: money(p.amount, s.currency) }))}</div>${waysHtml(p.ways)}`).join('') : `<div class="even">${esc(tr('nothing'))}</div>`;
+      html += `</div>`;
+    } else {
+      html += `<p class="center muted">${esc(tr('closed'))}</p>`;
+    }
+    bar.hidden = true;
+  } else {
+    // My lines: change how many, remove, add a new one
+    const lines = myLines();
+    html += `<div class="card"><h2>${esc(tr('your'))}</h2>`;
+    lines.forEach((l, i) => {
+      html += `<div class="item"><div style="flex:1"><b>${esc(l.name)}</b></div>
+        <div class="stepper"><button data-line="${i}" data-d="-1" aria-label="-">−</button><b class="qty">${l.qty}</b><button data-line="${i}" data-d="1" aria-label="+">+</button></div></div>`;
+    });
+    html += `<div style="display:flex;gap:8px;margin-top:6px"><input type="text" id="new" maxlength="80" placeholder="${esc(tr('placeholder'))}" value="${esc(draft)}"><button class="chip" id="add" style="margin-top:10px">${esc(tr('add'))}</button></div></div>`;
+
+    // Everyone's order together
+    const rows = combined();
+    html += `<div class="card"><h2>${esc(tr('everyone'))}</h2>`;
+    html += rows.length
+      ? rows.map((r) => `<div class="item"><b class="qty">${r.qty}×</b><div style="flex:1"><b>${esc(r.name)}</b><div class="small">${esc([...r.who].map(([k, n]) => `${nameOf(k)} ${n}`).join(', '))}</div></div></div>`).join('')
+      : `<div class="small">${esc(tr('none'))}</div>`;
+    html += `</div>`;
+    if (note) html += `<p class="${note.startsWith('!') ? 'err' : 'center muted'}">${esc(note.replace(/^!/, ''))}</p>`;
+
+    bar.hidden = false;
+    barInner.innerHTML = `<button class="btn" id="send" ${busy ? 'disabled' : ''}>${esc(tr('send'))}</button>`;
+    document.getElementById('send').onclick = sendOrder;
+  }
+  html += footer();
+  app.innerHTML = html;
+  bindHeader();
+  app.querySelectorAll('[data-copy]').forEach((b) => { b.onclick = () => { copyText(b.getAttribute('data-copy'), b); }; });
+
+  document.getElementById('change').onclick = () => {
+    phone = '';
+    store.set('phone:' + TOKEN, '');
+    mine = null;
+    note = '';
+    load();
+  };
+  app.querySelectorAll('[data-line]').forEach((b) => {
+    b.onclick = () => {
+      const lines = myLines().map((l) => ({ ...l }));
+      const i = Number(b.dataset.line);
+      lines[i].qty += Number(b.dataset.d);
+      mine = lines.filter((l) => l.qty > 0);
+      note = '';
+      render();
+    };
+  });
+  const box = document.getElementById('new');
+  if (box) {
+    box.oninput = (e) => { draft = e.target.value; };
+    box.onkeydown = (e) => {
+      if (e.key === 'Enter') addLine();
+    };
+    document.getElementById('add').onclick = addLine;
+  }
+}
+
+function addLine() {
+  const name = draft.trim().replace(/\s+/g, ' ');
+  if (!name) return;
+  const lines = myLines().map((l) => ({ ...l }));
+  const same = lines.find((l) => l.name.toLowerCase() === name.toLowerCase());
+  if (same) same.qty += 1;
+  else lines.push({ name, qty: 1 });
+  mine = lines.slice(0, 30);
+  draft = '';
+  note = '';
+  render();
+  document.getElementById('new')?.focus();
+}
+
+async function openOrder() {
+  const tried = phone.trim();
+  if (!tried) return;
+  busy = true;
+  render();
+  try {
+    s = await rpc('order_session', { p_token: TOKEN, p_phone: tried });
+    if (!s.needs_phone) {
+      store.set('phone:' + TOKEN, tried);
+      lastTried = '';
+    } else {
+      // Not on the order: empty the box so the next number can be typed straight away
+      lastTried = tried;
+      phone = '';
+    }
+  } catch {
+    return showExpired();
+  }
+  busy = false;
+  render();
+  if (s.needs_phone) document.getElementById('phone')?.focus();
+}
+
+async function sendOrder() {
+  busy = true;
+  render();
+  try {
+    await rpc('submit_order', { p_token: TOKEN, p_phone: phone, p_lines: myLines() });
+    mine = null;
+    note = tr('sent', { name: s.creator });
+    s = await rpc('order_session', { p_token: TOKEN, p_phone: phone });
+  } catch (e) {
+    note = '!' + e.message;
+  }
+  busy = false;
+  render();
+}
+
+// Others' lines show up while the page is open (not while I'm changing mine)
+setInterval(async () => {
+  if (!s || s.needs_phone || s.status !== 'open' || busy || mine || draft) return;
+  try { s = await rpc('order_session', { p_token: TOKEN, p_phone: phone }); render(); } catch {}
+}, 8000);
+
+applyDir();
+load();
+</script>
+</body>
+</html>

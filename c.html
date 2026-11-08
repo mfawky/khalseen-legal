@@ -61,6 +61,10 @@
     .err { color: var(--red); font-weight: 700; text-align: center; }
     .pay { font-size: 22px; font-weight: 800; color: var(--red); text-align: center; margin: 6px 0; }
     .even { font-size: 22px; font-weight: 800; color: var(--green); text-align: center; }
+    .ways { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 14px; }
+    .way { display: flex; align-items: center; gap: 10px; background: var(--alt); border-radius: 14px; padding: 10px 12px; text-align: start; }
+    .way .v { flex: 1; font-weight: 700; word-break: break-all; }
+    .paybtn { display: block; background: var(--primary); color: var(--on-primary); text-decoration: none; border-radius: 999px; padding: 13px; font-weight: 800; text-align: center; }
     .center { text-align: center; }
     footer { text-align: center; margin-top: 28px; }
     footer a { color: var(--primary); }
@@ -79,6 +83,7 @@ const TOKEN = location.hash.slice(1);
 
 const TEXTS = {
   en: {
+    payWith: 'Pay with {method}', copy: 'Copy', copied: 'Copied ✓', m_instapay: 'InstaPay', m_wallet: 'Wallet', m_bank: 'Bank account', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'Payment link', m_other: 'Other',
     brand: 'Khalseen', switchTo: 'العربية', intro: '{name} is splitting this bill. Pick what you had and send it.',
     phoneTitle: 'Enter your phone number', phoneHint: 'This bill opens only for the people on it.', open: 'Open the bill',
     notOnBill: "{number} isn't on this bill. Try another number, or ask {name} to add you.", hi: 'Hi {name} 👋', notYou: 'Not you?',
@@ -89,6 +94,7 @@ const TEXTS = {
     openApp: 'Have Khalseen? Open in the app', tagline: 'Split it. Pay it. Khalseen.', privacy: 'Privacy',
   },
   ar: {
+    payWith: 'ادفع بـ{method}', copy: 'انسخ', copied: 'اتنسخ ✓', m_instapay: 'إنستاباي', m_wallet: 'محفظة', m_bank: 'حساب بنكي', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'لينك دفع', m_other: 'طريقة تانية',
     brand: 'خالصين', switchTo: 'English', intro: '{name} بيقسّم الفاتورة دي. اختار اللي أخدته وابعته.',
     phoneTitle: 'اكتب رقم موبايلك', phoneHint: 'الفاتورة دي بتفتح بس للي فيها.', open: 'افتح الفاتورة',
     notOnBill: 'الرقم {number} مش في الفاتورة. جرّب رقم تاني، أو اطلب من {name} يضيفك.', hi: 'أهلاً {name} 👋', notYou: 'مش انت؟',
@@ -99,6 +105,7 @@ const TEXTS = {
     openApp: 'عندك خالصين؟ افتحه في التطبيق', tagline: 'قسّمها، ادفعها، وخالصين.', privacy: 'الخصوصية',
   },
   fr: {
+    payWith: 'Payer avec {method}', copy: 'Copier', copied: 'Copié ✓', m_instapay: 'InstaPay', m_wallet: 'Portefeuille', m_bank: 'Compte bancaire', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'Lien de paiement', m_other: 'Autre',
     brand: 'Khalseen', switchTo: 'العربية', intro: '{name} partage cette addition. Choisis ce que tu as pris et envoie.',
     phoneTitle: 'Entre ton numéro de téléphone', phoneHint: "Cette addition s'ouvre seulement pour les personnes qui y sont.", open: "Ouvrir l'addition",
     notOnBill: "{number} n'est pas sur cette addition. Essaie un autre numéro ou demande à {name} de t'ajouter.", hi: 'Salut {name} 👋', notYou: 'Pas toi ?',
@@ -109,6 +116,7 @@ const TEXTS = {
     openApp: "Tu as Khalseen ? Ouvre dans l'app", tagline: 'Partage. Paie. Khalseen.', privacy: 'Confidentialité',
   },
   de: {
+    payWith: 'Mit {method} zahlen', copy: 'Kopieren', copied: 'Kopiert ✓', m_instapay: 'InstaPay', m_wallet: 'Wallet', m_bank: 'Bankkonto', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'Zahlungslink', m_other: 'Andere',
     brand: 'Khalseen', switchTo: 'العربية', intro: '{name} teilt diese Rechnung. Wähle, was du hattest, und schick es ab.',
     phoneTitle: 'Gib deine Handynummer ein', phoneHint: 'Diese Rechnung öffnet sich nur für die Leute darauf.', open: 'Rechnung öffnen',
     notOnBill: '{number} steht nicht auf der Rechnung. Versuch eine andere Nummer oder bitte {name}, dich hinzuzufügen.', hi: 'Hallo {name} 👋', notYou: 'Nicht du?',
@@ -166,7 +174,7 @@ async function load() {
 
 function header() {
   return `<div class="top">
-    <svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset="1" stop-color="#5530E0"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g)"/><rect x="23.4" y="32.4" width="53.2" height="12.4" rx="6.2" fill="#fff"/><rect x="23.4" y="55.2" width="53.2" height="12.4" rx="6.2" fill="#2ED3A0"/></svg>
+    <svg width="36" height="36" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E6BFF"/><stop offset="1" stop-color="#5530E0"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g)"/><path d="M31 20 H69 V76 L64.25 81 L59.5 76 L54.75 81 L50 76 L45.25 81 L40.5 76 L35.75 81 L31 76 Z" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/><rect x="39" y="37" width="22" height="6" rx="3" fill="#6A48F5"/><rect x="39" y="51" width="22" height="6" rx="3" fill="#2ED3A0"/></svg>
     <div class="brand">${esc(tr('brand'))}</div>
     <button class="lang" id="lang">${esc(tr('switchTo'))}</button>
   </div>`;
@@ -195,6 +203,28 @@ function showExpired() {
 
 const myPicks = () => mine || Object.fromEntries(s.picks.filter((p) => p.person_key === s.me).map((p) => [p.item_id, Number(p.units)]));
 const nameOf = (key) => (s.people.find((p) => p.key === key) || {}).name || '?';
+
+// How to pay someone: a button for a payment link (https only: these come from people), else the number with Copy
+function wayName(w) { return w.label || tr('m_' + w.type) || w.type; }
+function waysHtml(ways) {
+  if (!Array.isArray(ways) || !ways.length) return '';
+  return '<div class="ways">' + ways.map((w) => /^https:\/\//i.test(w.url || '')
+    ? `<a class="paybtn" href="${esc(w.url)}" target="_blank" rel="noopener">${esc(tr('payWith', { method: wayName(w) }))}</a>`
+    : `<div class="way"><span class="small">${esc(wayName(w))}</span><span class="v">${esc(w.value)}</span><button class="chip" data-copy="${esc(w.value)}">${esc(tr('copy'))}</button></div>`).join('') + '</div>';
+}
+function copyText(value, button) {
+  const done = () => { button.textContent = tr('copied'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(value).then(done, () => {});
+    return;
+  }
+  const area = document.createElement('textarea');
+  area.value = value;
+  document.body.appendChild(area);
+  area.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  area.remove();
+}
 
 function render() {
   applyDir();
@@ -230,7 +260,7 @@ function render() {
     const r = (s.result || []).find((x) => x.key === s.me);
     if (r) {
       html += `<div class="card center"><div class="muted">${esc(tr('yourShare', { amount: money(r.share, s.currency) }))}</div>`;
-      html += r.pays.length ? r.pays.map((p) => `<div class="pay">${esc(tr('payTo', { name: p.to, amount: money(p.amount, s.currency) }))}</div>`).join('') : `<div class="even">${esc(tr('nothing'))}</div>`;
+      html += r.pays.length ? r.pays.map((p) => `<div class="pay">${esc(tr('payTo', { name: p.to, amount: money(p.amount, s.currency) }))}</div>${waysHtml(p.ways)}`).join('') : `<div class="even">${esc(tr('nothing'))}</div>`;
       html += `</div>`;
     }
     bar.hidden = true;
@@ -265,6 +295,7 @@ function render() {
   html += footer();
   app.innerHTML = html;
   bindHeader();
+  app.querySelectorAll('[data-copy]').forEach((b) => { b.onclick = () => { copyText(b.getAttribute('data-copy'), b); }; });
 
   document.getElementById('change').onclick = () => {
     phone = '';

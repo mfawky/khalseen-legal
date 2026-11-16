@@ -84,7 +84,7 @@ const TOKEN = location.hash.slice(1);
 
 const TEXTS = {
   en: {
-    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} is collecting the order. Add what you want.',
+    tapToAdd: 'Same as someone else? Tap it:', brand: 'Khalseen', switchTo: 'العربية', intro: '{name} is collecting the order. Add what you want.',
     phoneTitle: 'Enter your phone number', phoneHint: 'This order opens only for the people in it.', open: 'Open the order',
     notOnBill: "{number} isn't on this order. Try another number, or ask {name} to add you.", hi: 'Hi {name} 👋', notYou: 'Not you?',
     your: 'What do you want?', placeholder: 'e.g. Koshari, large', add: 'Add', everyone: 'The whole order', none: 'Nothing yet',
@@ -95,7 +95,7 @@ const TEXTS = {
     payWith: 'Pay with {method}', copy: 'Copy', copied: 'Copied ✓', m_instapay: 'InstaPay', m_wallet: 'Wallet', m_bank: 'Bank account', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'Payment link', m_other: 'Other',
   },
   ar: {
-    brand: 'خالصين', switchTo: 'English', intro: '{name} بيجمّع الأوردر. ضيف اللي عايزه.',
+    tapToAdd: 'زي حد تاني؟ دوس عليه:', brand: 'خالصين', switchTo: 'English', intro: '{name} بيجمّع الأوردر. ضيف اللي عايزه.',
     phoneTitle: 'اكتب رقم موبايلك', phoneHint: 'الأوردر ده بيفتح بس للناس اللي فيه.', open: 'افتح الأوردر',
     notOnBill: '{number} مش في الأوردر ده. جرّب رقم تاني، أو قول لـ{name} يضيفك.', hi: 'أهلًا {name} 👋', notYou: 'مش انت؟',
     your: 'عايز إيه؟', placeholder: 'مثلًا: كشري كبير', add: 'ضيف', everyone: 'الأوردر كله', none: 'لسه مفيش حاجة',
@@ -106,7 +106,7 @@ const TEXTS = {
     payWith: 'ادفع بـ{method}', copy: 'انسخ', copied: 'اتنسخ ✓', m_instapay: 'إنستاباي', m_wallet: 'محفظة', m_bank: 'حساب بنكي', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'لينك دفع', m_other: 'طريقة تانية',
   },
   fr: {
-    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} prend la commande. Ajoute ce que tu veux.',
+    tapToAdd: "Pareil que quelqu'un ? Appuie dessus :", brand: 'Khalseen', switchTo: 'العربية', intro: '{name} prend la commande. Ajoute ce que tu veux.',
     phoneTitle: 'Entre ton numéro de téléphone', phoneHint: "Cette commande s'ouvre seulement pour les personnes dedans.", open: 'Ouvrir la commande',
     notOnBill: "{number} n'est pas dans cette commande. Essaie un autre numéro, ou demande à {name} de t'ajouter.", hi: 'Salut {name} 👋', notYou: 'Pas toi ?',
     your: 'Tu veux quoi ?', placeholder: 'ex. Koshari, grand', add: 'Ajouter', everyone: 'Toute la commande', none: 'Rien pour le moment',
@@ -117,7 +117,7 @@ const TEXTS = {
     payWith: 'Payer avec {method}', copy: 'Copier', copied: 'Copié ✓', m_instapay: 'InstaPay', m_wallet: 'Portefeuille', m_bank: 'Compte bancaire', m_paypal: 'PayPal', m_revolut: 'Revolut', m_wise: 'Wise', m_venmo: 'Venmo', m_cashapp: 'Cash App', m_zelle: 'Zelle', m_upi: 'UPI', m_link: 'Lien de paiement', m_other: 'Autre',
   },
   de: {
-    brand: 'Khalseen', switchTo: 'العربية', intro: '{name} sammelt die Bestellung. Trag ein, was du willst.',
+    tapToAdd: 'Dasselbe wie jemand? Tippen:', brand: 'Khalseen', switchTo: 'العربية', intro: '{name} sammelt die Bestellung. Trag ein, was du willst.',
     phoneTitle: 'Gib deine Handynummer ein', phoneHint: 'Diese Bestellung öffnet sich nur für die Leute darin.', open: 'Bestellung öffnen',
     notOnBill: '{number} ist nicht in dieser Bestellung. Versuch eine andere Nummer oder bitte {name}, dich hinzuzufügen.', hi: 'Hallo {name} 👋', notYou: 'Nicht du?',
     your: 'Was willst du?', placeholder: 'z. B. Koshari, groß', add: 'Hinzufügen', everyone: 'Die ganze Bestellung', none: 'Noch nichts',
@@ -206,18 +206,70 @@ function showExpired() {
 const nameOf = (key) => (s.people.find((p) => p.key === key) || {}).name || '?';
 const myLines = () => mine || s.lines.filter((l) => l.person_key === s.me).map((l) => ({ name: l.name, qty: Number(l.qty) }));
 
-// Everyone's lines (mine as I'm editing them), one per dish: "3× Pepsi · Ahmed 2, Sara 1"
+// The same dish written two ways ("بيض بسطرمة" / "بيض بسطرمه", "Pepsi" / "pepsi") is one dish.
+// Same rules as src/lib/orders.ts in the app: keep the two the same.
+const tidy = (name) => String(name).trim().replace(/\s+/g, ' ');
+function dishKey(name) {
+  return String(name).toLowerCase()
+    .replace(/[ً-ٰٟـ]/g, '')
+    .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[.,،؛;:!?؟'"()[\]{}/\\+*_-]+/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+function distance(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    if (Math.min(...cur) > max) return max + 1;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function sameDish(a, b) {
+  const ka = dishKey(a), kb = dishKey(b);
+  if (!ka || !kb) return false;
+  if (ka === kb || ka.replace(/ /g, '') === kb.replace(/ /g, '')) return true;
+  if (ka.replace(/\D/g, '') !== kb.replace(/\D/g, '')) return false;
+  return Math.min(ka.length, kb.length) >= 8 && distance(ka, kb, 1) <= 1;
+}
+
+// Everyone's lines (mine as I'm editing them), one per dish: "3× Pepsi · Ahmed 2, Sara 1".
+// A dish keeps the spelling it was first written with.
 function combined() {
   const all = [...s.lines.filter((l) => l.person_key !== s.me), ...myLines().map((l) => ({ ...l, person_key: s.me }))];
-  const rows = new Map();
+  const rows = [];
   all.forEach((l) => {
-    const k = l.name.trim().replace(/\s+/g, ' ').toLowerCase();
-    const r = rows.get(k) || { name: l.name.trim(), qty: 0, who: new Map() };
+    if (!tidy(l.name) || Number(l.qty) < 1) return;
+    let r = rows.find((x) => sameDish(x.name, l.name));
+    if (!r) rows.push((r = { name: tidy(l.name), qty: 0, who: new Map() }));
     r.qty += Number(l.qty);
     r.who.set(l.person_key, (r.who.get(l.person_key) || 0) + Number(l.qty));
-    rows.set(k, r);
   });
-  return [...rows.values()];
+  return rows;
+}
+
+// Dishes others already ordered, to tap instead of typing (while typing: the ones that contain it)
+function picks() {
+  const k = dishKey(draft);
+  return combined()
+    .map((r) => r.name)
+    .filter((n) => !myLines().some((l) => sameDish(l.name, n)))
+    .filter((n) => !k || dishKey(n).includes(k) || sameDish(n, draft))
+    .slice(0, 8);
+}
+function picksHtml() {
+  const tap = picks();
+  return tap.length
+    ? `<div class="small" style="margin-top:10px">${esc(tr('tapToAdd'))}</div><div class="chips" style="margin-top:6px">${tap.map((n) => `<button class="chip" data-pick="${esc(n)}">＋ ${esc(n)}</button>`).join('')}</div>`
+    : '';
+}
+function bindPicks() {
+  app.querySelectorAll('[data-pick]').forEach((b) => {
+    b.onclick = () => addLine(b.getAttribute('data-pick'));
+  });
 }
 
 // How to pay someone: a button for a payment link (https only: these come from people), else the number with Copy
@@ -289,6 +341,7 @@ function render() {
       html += `<div class="item"><div style="flex:1"><b>${esc(l.name)}</b></div>
         <div class="stepper"><button data-line="${i}" data-d="-1" aria-label="-">−</button><b class="qty">${l.qty}</b><button data-line="${i}" data-d="1" aria-label="+">+</button></div></div>`;
     });
+    html += `<div id="picks">${picksHtml()}</div>`;
     html += `<div style="display:flex;gap:8px;margin-top:6px"><input type="text" id="new" maxlength="80" placeholder="${esc(tr('placeholder'))}" value="${esc(draft)}"><button class="chip" id="add" style="margin-top:10px">${esc(tr('add'))}</button></div></div>`;
 
     // Everyone's order together
@@ -326,9 +379,15 @@ function render() {
       render();
     };
   });
+  bindPicks();
   const box = document.getElementById('new');
   if (box) {
-    box.oninput = (e) => { draft = e.target.value; };
+    // Typing narrows the dishes to tap (only that part is redrawn, so the keyboard isn't interrupted)
+    box.oninput = (e) => {
+      draft = e.target.value;
+      document.getElementById('picks').innerHTML = picksHtml();
+      bindPicks();
+    };
     box.onkeydown = (e) => {
       if (e.key === 'Enter') addLine();
     };
@@ -336,11 +395,14 @@ function render() {
   }
 }
 
-function addLine() {
-  const name = draft.trim().replace(/\s+/g, ' ');
-  if (!name) return;
+// Add a dish (typed, or tapped from what others ordered). Typed again, it takes the spelling already in
+// the order, so the waiter hears one name: "بيض بسطرمه" becomes the "بيض بسطرمة" that was there first.
+function addLine(tapped) {
+  const typed = tidy(tapped || draft);
+  if (!typed) return;
+  const name = combined().map((r) => r.name).find((n) => sameDish(n, typed)) || typed;
   const lines = myLines().map((l) => ({ ...l }));
-  const same = lines.find((l) => l.name.toLowerCase() === name.toLowerCase());
+  const same = lines.find((l) => sameDish(l.name, name));
   if (same) same.qty += 1;
   else lines.push({ name, qty: 1 });
   mine = lines.slice(0, 30);

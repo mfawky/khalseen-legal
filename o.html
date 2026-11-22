@@ -391,7 +391,7 @@ function render() {
     box.onkeydown = (e) => {
       if (e.key === 'Enter') addLine();
     };
-    document.getElementById('add').onclick = addLine;
+    document.getElementById('add').onclick = () => addLine(); // not addLine itself: it would get the click as the dish name
   }
 }
 
